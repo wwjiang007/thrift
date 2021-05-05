@@ -27,6 +27,10 @@ struct String {
   1: string val
 }
 
+struct Binary {
+  1: binary val
+}
+
 struct Boolean {
   1: bool val
 }
@@ -96,3 +100,8 @@ service AsyncNonblockingService {
     7: Map somemap,
   ) throws (1:Exception ex);
 }
+
+struct SafeBytes {
+  1: binary bytes;
+}
+

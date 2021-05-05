@@ -31,7 +31,7 @@
 #include "thrift/generate/t_oop_generator.h"
 
 using std::map;
-using std::ofstream;
+using std::ostream;
 using std::ostringstream;
 using std::string;
 using std::stringstream;
@@ -121,33 +121,33 @@ public:
    * Init and close methods
    */
 
-  void init_generator();
-  void close_generator();
+  void init_generator() override;
+  void close_generator() override;
 
   void export_class_to_library(string file_name, string class_name);
 
   void generate_dart_library();
   void generate_dart_pubspec();
 
-  void generate_consts(std::vector<t_const*> consts);
+  void generate_consts(std::vector<t_const*> consts) override;
 
   /**
    * Program-level generation functions
    */
 
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
-  void generate_struct(t_struct* tstruct);
-  void generate_xception(t_struct* txception);
-  void generate_service(t_service* tservice);
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
+  void generate_struct(t_struct* tstruct) override;
+  void generate_xception(t_struct* txception) override;
+  void generate_service(t_service* tservice) override;
 
-  void print_const_value(std::ofstream& out,
+  void print_const_value(std::ostream& out,
                          std::string name,
                          t_type* type,
                          t_const_value* value,
                          bool in_static,
                          bool defval = false);
-  std::string render_const_value(ofstream& out,
+  std::string render_const_value(ostream& out,
                                  std::string name,
                                  t_type* type,
                                  t_const_value* value);
@@ -158,21 +158,21 @@ public:
 
   void generate_dart_struct(t_struct* tstruct, bool is_exception);
 
-  void generate_dart_struct_definition(std::ofstream& out,
+  void generate_dart_struct_definition(std::ostream& out,
                                        t_struct* tstruct,
                                        bool is_xception = false,
                                        bool is_result = false,
                                        string export_file_name = "");
-  void generate_dart_struct_reader(std::ofstream& out, t_struct* tstruct);
-  void generate_dart_validator(std::ofstream& out, t_struct* tstruct);
-  void generate_dart_struct_result_writer(std::ofstream& out, t_struct* tstruct);
-  void generate_dart_struct_writer(std::ofstream& out, t_struct* tstruct);
-  void generate_dart_struct_tostring(std::ofstream& out, t_struct* tstruct);
+  void generate_dart_struct_reader(std::ostream& out, t_struct* tstruct);
+  void generate_dart_validator(std::ostream& out, t_struct* tstruct);
+  void generate_dart_struct_result_writer(std::ostream& out, t_struct* tstruct);
+  void generate_dart_struct_writer(std::ostream& out, t_struct* tstruct);
+  void generate_dart_struct_tostring(std::ostream& out, t_struct* tstruct);
   std::string get_dart_type_string(t_type* type);
-  void generate_generic_field_getters(std::ofstream& out, t_struct* tstruct);
-  void generate_generic_field_setters(std::ofstream& out, t_struct* tstruct);
-  void generate_generic_isset_method(std::ofstream& out, t_struct* tstruct);
-  void generate_dart_bean_boilerplate(std::ofstream& out, t_struct* tstruct);
+  void generate_generic_field_getters(std::ostream& out, t_struct* tstruct);
+  void generate_generic_field_setters(std::ostream& out, t_struct* tstruct);
+  void generate_generic_isset_method(std::ostream& out, t_struct* tstruct);
+  void generate_dart_bean_boilerplate(std::ostream& out, t_struct* tstruct);
 
   void generate_function_helpers(t_function* tfunction);
   std::string init_value(t_field* tfield);
@@ -184,7 +184,7 @@ public:
   std::string get_constants_class_name(std::string name);
   std::string generate_isset_check(t_field* field);
   std::string generate_isset_check(std::string field);
-  void generate_isset_set(ofstream& out, t_field* field);
+  void generate_isset_set(ostream& out, t_field* field);
 
   void generate_service_interface(t_service* tservice);
   void generate_service_helpers(t_service* tservice);
@@ -196,38 +196,38 @@ public:
    * Serialization constructs
    */
 
-  void generate_deserialize_field(std::ofstream& out, t_field* tfield, std::string prefix = "");
+  void generate_deserialize_field(std::ostream& out, t_field* tfield, std::string prefix = "");
 
-  void generate_deserialize_struct(std::ofstream& out, t_struct* tstruct, std::string prefix = "");
+  void generate_deserialize_struct(std::ostream& out, t_struct* tstruct, std::string prefix = "");
 
-  void generate_deserialize_container(std::ofstream& out, t_type* ttype, std::string prefix = "");
+  void generate_deserialize_container(std::ostream& out, t_type* ttype, std::string prefix = "");
 
-  void generate_deserialize_set_element(std::ofstream& out, t_set* tset, std::string prefix = "");
+  void generate_deserialize_set_element(std::ostream& out, t_set* tset, std::string prefix = "");
 
-  void generate_deserialize_map_element(std::ofstream& out, t_map* tmap, std::string prefix = "");
+  void generate_deserialize_map_element(std::ostream& out, t_map* tmap, std::string prefix = "");
 
-  void generate_deserialize_list_element(std::ofstream& out,
+  void generate_deserialize_list_element(std::ostream& out,
                                          t_list* tlist,
                                          std::string prefix = "");
 
-  void generate_serialize_field(std::ofstream& out, t_field* tfield, std::string prefix = "");
+  void generate_serialize_field(std::ostream& out, t_field* tfield, std::string prefix = "");
 
-  void generate_serialize_struct(std::ofstream& out, t_struct* tstruct, std::string prefix = "");
+  void generate_serialize_struct(std::ostream& out, t_struct* tstruct, std::string prefix = "");
 
-  void generate_serialize_container(std::ofstream& out, t_type* ttype, std::string prefix = "");
+  void generate_serialize_container(std::ostream& out, t_type* ttype, std::string prefix = "");
 
-  void generate_serialize_map_element(std::ofstream& out,
+  void generate_serialize_map_element(std::ostream& out,
                                       t_map* tmap,
                                       std::string iter,
                                       std::string map);
 
-  void generate_serialize_set_element(std::ofstream& out, t_set* tmap, std::string iter);
+  void generate_serialize_set_element(std::ostream& out, t_set* tmap, std::string iter);
 
-  void generate_serialize_list_element(std::ofstream& out, t_list* tlist, std::string iter);
+  void generate_serialize_list_element(std::ostream& out, t_list* tlist, std::string iter);
 
-  void generate_dart_doc(std::ofstream& out, t_doc* tdoc);
+  void generate_dart_doc(std::ostream& out, t_doc* tdoc);
 
-  void generate_dart_doc(std::ofstream& out, t_function* tdoc);
+  void generate_dart_doc(std::ostream& out, t_function* tdoc);
 
   /**
    * Helper rendering functions
@@ -265,7 +265,7 @@ public:
   std::string constant_name(std::string name);
 
 private:
-  std::ofstream f_service_;
+  ofstream_with_content_based_conditional_update f_service_;
 
   std::string library_name_;
   std::string library_prefix_;
@@ -359,8 +359,8 @@ string t_dart_generator::dart_thrift_imports() {
 
   // add imports for included thrift files
   const vector<t_program*>& includes = program_->get_includes();
-  for (size_t i = 0; i < includes.size(); ++i) {
-    string include_name = find_library_name(includes[i]);
+  for (auto include : includes) {
+    string include_name = find_library_name(include);
     string named_import = "t_" + include_name;
     if (package_prefix_.empty()) {
       imports += "import 'package:" + include_name + "/" + include_name + ".dart' as " + named_import + ";" + endl;
@@ -391,7 +391,7 @@ void t_dart_generator::generate_dart_library() {
     f_library_name = get_out_dir() + "/" + library_name_ + ".dart";
   }
 
-  ofstream f_library;
+  ofstream_with_content_based_conditional_update f_library;
   f_library.open(f_library_name.c_str());
 
   f_library << autogen_comment() << endl;
@@ -413,7 +413,7 @@ void t_dart_generator::export_class_to_library(string file_name, string class_na
 
 void t_dart_generator::generate_dart_pubspec() {
   string f_pubspec_name = base_dir_ + "/pubspec.yaml";
-  ofstream f_pubspec;
+  ofstream_with_content_based_conditional_update f_pubspec;
   f_pubspec.open(f_pubspec_name.c_str());
 
   indent(f_pubspec) << "name: " << library_name_ << endl;
@@ -423,7 +423,7 @@ void t_dart_generator::generate_dart_pubspec() {
 
   indent(f_pubspec) << "environment:" << endl;
   indent_up();
-  indent(f_pubspec) << "sdk: ^1.12.0" << endl;
+  indent(f_pubspec) << "sdk: '>=1.24.3 <3.0.0'" << endl;
   indent_down();
   f_pubspec << endl;
 
@@ -438,15 +438,15 @@ void t_dart_generator::generate_dart_pubspec() {
     indent_down();
   } else {
     const vector<std::string> lines = split(pubspec_lib_, '|');
-    for (size_t line_index = 0; line_index < lines.size(); line_index++) {
-      indent(f_pubspec) << lines[line_index] << endl;
+    for (const auto & line : lines) {
+      indent(f_pubspec) << line << endl;
     }
   }
 
   // add included thrift files as dependencies
   const vector<t_program*>& includes = program_->get_includes();
-  for (size_t i = 0; i < includes.size(); ++i) {
-    string include_name = find_library_name(includes[i]);
+  for (auto include : includes) {
+    string include_name = find_library_name(include);
     indent(f_pubspec) << include_name << ":" << endl;
     indent_up();
     indent(f_pubspec) << "path: ../" << include_name << endl;
@@ -478,7 +478,7 @@ void t_dart_generator::generate_enum(t_enum* tenum) {
   string file_name = get_file_name(tenum->get_name());
 
   string f_enum_name = src_dir_ + "/" + file_name + ".dart";
-  ofstream f_enum;
+  ofstream_with_content_based_conditional_update f_enum;
   f_enum.open(f_enum_name.c_str());
 
   // Comment and add library
@@ -540,7 +540,7 @@ void t_dart_generator::generate_consts(std::vector<t_const*> consts) {
   string file_name = get_file_name(class_name);
 
   string f_consts_name = src_dir_ + "/" + file_name + ".dart";
-  ofstream f_consts;
+  ofstream_with_content_based_conditional_update f_consts;
   f_consts.open(f_consts_name.c_str());
 
   // Print header
@@ -566,7 +566,7 @@ void t_dart_generator::generate_consts(std::vector<t_const*> consts) {
   f_consts.close();
 }
 
-void t_dart_generator::print_const_value(std::ofstream& out,
+void t_dart_generator::print_const_value(std::ostream& out,
                                         string name,
                                         t_type* type,
                                         t_const_value* value,
@@ -594,18 +594,18 @@ void t_dart_generator::print_const_value(std::ofstream& out,
   } else if (type->is_struct() || type->is_xception()) {
     const vector<t_field*>& fields = ((t_struct*)type)->get_members();
     vector<t_field*>::const_iterator f_iter;
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     out << type_name(type) << " " << name << " = new " << type_name(type) << "()";
     indent_up();
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-      t_type* field_type = NULL;
+      t_type* field_type = nullptr;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
         if ((*f_iter)->get_name() == v_iter->first->get_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
-      if (field_type == NULL) {
+      if (field_type == nullptr) {
         throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
       }
       string val = render_const_value(out, name, field_type, v_iter->second);
@@ -623,8 +623,8 @@ void t_dart_generator::print_const_value(std::ofstream& out,
 
     t_type* ktype = ((t_map*)type)->get_key_type();
     t_type* vtype = ((t_map*)type)->get_val_type();
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
 
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       string key = render_const_value(out, name, ktype, v_iter->first);
@@ -668,7 +668,7 @@ void t_dart_generator::print_const_value(std::ofstream& out,
   }
 }
 
-string t_dart_generator::render_const_value(ofstream& out,
+string t_dart_generator::render_const_value(ostream& out,
                                            string name,
                                            t_type* type,
                                            t_const_value* value) {
@@ -740,7 +740,7 @@ void t_dart_generator::generate_xception(t_struct* txception) {
 void t_dart_generator::generate_dart_struct(t_struct* tstruct, bool is_exception) {
   string file_name = get_file_name(tstruct->get_name());
   string f_struct_name = src_dir_ + "/" + file_name + ".dart";
-  ofstream f_struct;
+  ofstream_with_content_based_conditional_update f_struct;
   f_struct.open(f_struct_name.c_str());
 
   f_struct << autogen_comment() << dart_library(file_name) << endl;
@@ -764,7 +764,7 @@ void t_dart_generator::generate_dart_struct(t_struct* tstruct, bool is_exception
  * @param in_class     If inside a class, needs to be static class
  * @param is_result    If this is a result it needs a different writer
  */
-void t_dart_generator::generate_dart_struct_definition(ofstream& out,
+void t_dart_generator::generate_dart_struct_definition(ostream& out,
                                                        t_struct* tstruct,
                                                        bool is_exception,
                                                        bool is_result,
@@ -777,10 +777,10 @@ void t_dart_generator::generate_dart_struct_definition(ofstream& out,
   }
   indent(out) << "class " << class_name << " ";
 
-  if (is_exception) {
-    out << "extends Error ";
-  }
   out << "implements TBase";
+  if (is_exception) {
+    out << ", Exception ";
+  }
   scope_up(out);
 
   indent(out) << "static final TStruct _STRUCT_DESC = new TStruct(\"" << class_name
@@ -827,7 +827,7 @@ void t_dart_generator::generate_dart_struct_definition(ofstream& out,
   scope_up(out);
   for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
     t_type* t = get_true_type((*m_iter)->get_type());
-    if ((*m_iter)->get_value() != NULL) {
+    if ((*m_iter)->get_value() != nullptr) {
       print_const_value(out,
                         "this." + get_member_name((*m_iter)->get_name()),
                         t,
@@ -861,7 +861,7 @@ void t_dart_generator::generate_dart_struct_definition(ofstream& out,
  *
  * @param tstruct The struct definition
  */
-void t_dart_generator::generate_dart_struct_reader(ofstream& out, t_struct* tstruct) {
+void t_dart_generator::generate_dart_struct_reader(ostream& out, t_struct* tstruct) {
   indent(out) << "read(TProtocol iprot)";
   scope_up(out);
 
@@ -949,7 +949,7 @@ void t_dart_generator::generate_dart_struct_reader(ofstream& out, t_struct* tstr
 
 // generates dart method to perform various checks
 // (e.g. check that all required fields are set)
-void t_dart_generator::generate_dart_validator(ofstream& out, t_struct* tstruct) {
+void t_dart_generator::generate_dart_validator(ostream& out, t_struct* tstruct) {
   indent(out) << "validate()";
   scope_up(out);
 
@@ -1000,7 +1000,7 @@ void t_dart_generator::generate_dart_validator(ofstream& out, t_struct* tstruct)
  *
  * @param tstruct The struct definition
  */
-void t_dart_generator::generate_dart_struct_writer(ofstream& out, t_struct* tstruct) {
+void t_dart_generator::generate_dart_struct_writer(ostream& out, t_struct* tstruct) {
   out << indent() << "write(TProtocol oprot)";
   scope_up(out);
 
@@ -1056,7 +1056,7 @@ void t_dart_generator::generate_dart_struct_writer(ofstream& out, t_struct* tstr
  *
  * @param tstruct The struct definition
  */
-void t_dart_generator::generate_dart_struct_result_writer(ofstream& out, t_struct* tstruct) {
+void t_dart_generator::generate_dart_struct_result_writer(ostream& out, t_struct* tstruct) {
   indent(out) << "write(TProtocol oprot)";
   scope_up(out);
 
@@ -1097,7 +1097,7 @@ void t_dart_generator::generate_dart_struct_result_writer(ofstream& out, t_struc
   scope_down(out, endl2);
 }
 
-void t_dart_generator::generate_generic_field_getters(std::ofstream& out,
+void t_dart_generator::generate_generic_field_getters(std::ostream& out,
                                                       t_struct* tstruct) {
   // create the getter
   indent(out) << "getFieldValue(int fieldID)";
@@ -1127,7 +1127,7 @@ void t_dart_generator::generate_generic_field_getters(std::ofstream& out,
   scope_down(out, endl2);  // method
 }
 
-void t_dart_generator::generate_generic_field_setters(std::ofstream& out,
+void t_dart_generator::generate_generic_field_setters(std::ostream& out,
                                                       t_struct* tstruct) {
 
   // create the setter
@@ -1172,7 +1172,7 @@ void t_dart_generator::generate_generic_field_setters(std::ofstream& out,
 }
 
 // Creates a generic isSet method that takes the field number as argument
-void t_dart_generator::generate_generic_isset_method(std::ofstream& out, t_struct* tstruct) {
+void t_dart_generator::generate_generic_isset_method(std::ostream& out, t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
@@ -1208,7 +1208,7 @@ void t_dart_generator::generate_generic_isset_method(std::ofstream& out, t_struc
  *
  * @param tstruct The struct definition
  */
-void t_dart_generator::generate_dart_bean_boilerplate(ofstream& out,
+void t_dart_generator::generate_dart_bean_boilerplate(ostream& out,
                                                     t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
@@ -1257,7 +1257,7 @@ void t_dart_generator::generate_dart_bean_boilerplate(ofstream& out,
  *
  * @param tstruct The struct definition
  */
-void t_dart_generator::generate_dart_struct_tostring(ofstream& out,
+void t_dart_generator::generate_dart_struct_tostring(ostream& out,
                                                    t_struct* tstruct) {
   indent(out) << "String toString()";
   scope_up(out);
@@ -1409,7 +1409,7 @@ void t_dart_generator::generate_service(t_service* tservice) {
  */
 void t_dart_generator::generate_service_interface(t_service* tservice) {
   string extends_iface = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     extends_iface = " extends " + get_ttype_class_name(tservice->get_extends());
   }
 
@@ -1454,7 +1454,7 @@ void t_dart_generator::generate_service_helpers(t_service* tservice) {
 void t_dart_generator::generate_service_client(t_service* tservice) {
   string extends = "";
   string extends_client = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     extends = get_ttype_class_name(tservice->get_extends());
     extends_client = " extends " + extends + "Client";
   }
@@ -1587,7 +1587,7 @@ void t_dart_generator::generate_service_server(t_service* tservice) {
   // Extends stuff
   string extends = "";
   string extends_processor = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     extends = get_ttype_class_name(tservice->get_extends());
     extends_processor = " extends " + extends + "Processor";
   }
@@ -1784,7 +1784,7 @@ void t_dart_generator::generate_process_function(t_service* tservice, t_function
  * @param tfield The field
  * @param prefix The variable name or container for this field
  */
-void t_dart_generator::generate_deserialize_field(ofstream& out, t_field* tfield, string prefix) {
+void t_dart_generator::generate_deserialize_field(ostream& out, t_field* tfield, string prefix) {
   t_type* type = get_true_type(tfield->get_type());
   string field_name = get_member_name(tfield->get_name());
 
@@ -1850,7 +1850,7 @@ void t_dart_generator::generate_deserialize_field(ofstream& out, t_field* tfield
 /**
  * Generates an unserializer for a struct, invokes read()
  */
-void t_dart_generator::generate_deserialize_struct(ofstream& out, t_struct* tstruct, string prefix) {
+void t_dart_generator::generate_deserialize_struct(ostream& out, t_struct* tstruct, string prefix) {
   indent(out) << prefix << " = new " << type_name(tstruct) << "();" << endl;
   indent(out) << prefix << ".read(iprot);" << endl;
 }
@@ -1858,7 +1858,7 @@ void t_dart_generator::generate_deserialize_struct(ofstream& out, t_struct* tstr
 /**
  * Deserializes a container by reading its size and then iterating
  */
-void t_dart_generator::generate_deserialize_container(ofstream& out, t_type* ttype, string prefix) {
+void t_dart_generator::generate_deserialize_container(ostream& out, t_type* ttype, string prefix) {
   indent(out);
   scope_up(out, "");
 
@@ -1915,7 +1915,7 @@ void t_dart_generator::generate_deserialize_container(ofstream& out, t_type* tty
 /**
  * Generates code to deserialize a map
  */
-void t_dart_generator::generate_deserialize_map_element(ofstream& out, t_map* tmap, string prefix) {
+void t_dart_generator::generate_deserialize_map_element(ostream& out, t_map* tmap, string prefix) {
   string key = tmp("_key");
   string val = tmp("_val");
   t_field fkey(tmap->get_key_type(), key);
@@ -1933,7 +1933,7 @@ void t_dart_generator::generate_deserialize_map_element(ofstream& out, t_map* tm
 /**
  * Deserializes a set element
  */
-void t_dart_generator::generate_deserialize_set_element(ofstream& out, t_set* tset, string prefix) {
+void t_dart_generator::generate_deserialize_set_element(ostream& out, t_set* tset, string prefix) {
   string elem = tmp("_elem");
   t_field felem(tset->get_elem_type(), elem);
 
@@ -1947,7 +1947,7 @@ void t_dart_generator::generate_deserialize_set_element(ofstream& out, t_set* ts
 /**
  * Deserializes a list element
  */
-void t_dart_generator::generate_deserialize_list_element(ofstream& out,
+void t_dart_generator::generate_deserialize_list_element(ostream& out,
                                                         t_list* tlist,
                                                         string prefix) {
   string elem = tmp("_elem");
@@ -1966,7 +1966,7 @@ void t_dart_generator::generate_deserialize_list_element(ofstream& out,
  * @param tfield The field to serialize
  * @param prefix Name to prepend to field name
  */
-void t_dart_generator::generate_serialize_field(ofstream& out, t_field* tfield, string prefix) {
+void t_dart_generator::generate_serialize_field(ostream& out, t_field* tfield, string prefix) {
   t_type* type = get_true_type(tfield->get_type());
   string field_name = get_member_name(tfield->get_name());
 
@@ -2036,7 +2036,7 @@ void t_dart_generator::generate_serialize_field(ofstream& out, t_field* tfield, 
  * @param tstruct The struct to serialize
  * @param prefix  String prefix to attach to all fields
  */
-void t_dart_generator::generate_serialize_struct(ofstream& out, t_struct* tstruct, string prefix) {
+void t_dart_generator::generate_serialize_struct(ostream& out, t_struct* tstruct, string prefix) {
   (void)tstruct;
   indent(out) << prefix << ".write(oprot);" << endl;
 }
@@ -2047,7 +2047,7 @@ void t_dart_generator::generate_serialize_struct(ofstream& out, t_struct* tstruc
  * @param ttype  The type of container
  * @param prefix String prefix for fields
  */
-void t_dart_generator::generate_serialize_container(ofstream& out, t_type* ttype, string prefix) {
+void t_dart_generator::generate_serialize_container(ostream& out, t_type* ttype, string prefix) {
   indent(out);
   scope_up(out, "");
 
@@ -2098,7 +2098,7 @@ void t_dart_generator::generate_serialize_container(ofstream& out, t_type* ttype
 /**
  * Serializes the members of a map.
  */
-void t_dart_generator::generate_serialize_map_element(ofstream& out,
+void t_dart_generator::generate_serialize_map_element(ostream& out,
                                                      t_map* tmap,
                                                      string iter,
                                                      string map) {
@@ -2111,7 +2111,7 @@ void t_dart_generator::generate_serialize_map_element(ofstream& out,
 /**
  * Serializes the members of a set.
  */
-void t_dart_generator::generate_serialize_set_element(ofstream& out, t_set* tset, string iter) {
+void t_dart_generator::generate_serialize_set_element(ostream& out, t_set* tset, string iter) {
   t_field efield(tset->get_elem_type(), iter);
   generate_serialize_field(out, &efield, "");
 }
@@ -2119,7 +2119,7 @@ void t_dart_generator::generate_serialize_set_element(ofstream& out, t_set* tset
 /**
  * Serializes the members of a list.
  */
-void t_dart_generator::generate_serialize_list_element(ofstream& out, t_list* tlist, string iter) {
+void t_dart_generator::generate_serialize_list_element(ostream& out, t_list* tlist, string iter) {
   t_field efield(tlist->get_elem_type(), iter);
   generate_serialize_field(out, &efield, "");
 }
@@ -2193,8 +2193,8 @@ string t_dart_generator::declare_field(t_field* tfield, bool init) {
   string result = type_name(tfield->get_type()) + " " + field_name;
   if (init) {
     t_type* ttype = get_true_type(tfield->get_type());
-    if (ttype->is_base_type() && tfield->get_value() != NULL) {
-      ofstream dummy;
+    if (ttype->is_base_type() && tfield->get_value() != nullptr) {
+      std:: ofstream dummy;
       result += " = " + render_const_value(dummy, field_name, ttype, tfield->get_value());
     } else if (ttype->is_base_type()) {
       t_base_type::t_base tbase = ((t_base_type*)ttype)->get_base();
@@ -2432,9 +2432,7 @@ string t_dart_generator::constant_name(string name) {
 
   bool is_first = true;
   bool was_previous_char_upper = false;
-  for (string::iterator iter = name.begin(); iter != name.end(); ++iter) {
-    string::value_type character = (*iter);
-
+  for (char character : name) {
     bool is_upper = isupper(character);
 
     if (is_upper && !is_first && !was_previous_char_upper) {
@@ -2452,7 +2450,7 @@ string t_dart_generator::constant_name(string name) {
 /**
  * Emits a doc comment if the provided object has a doc in Thrift
  */
-void t_dart_generator::generate_dart_doc(ofstream& out, t_doc* tdoc) {
+void t_dart_generator::generate_dart_doc(ostream& out, t_doc* tdoc) {
   if (tdoc->has_doc()) {
     generate_docstring_comment(out, "", "/// ", tdoc->get_doc(), "");
   }
@@ -2461,7 +2459,7 @@ void t_dart_generator::generate_dart_doc(ofstream& out, t_doc* tdoc) {
 /**
  * Emits a doc comment if the provided function object has a doc in Thrift
  */
-void t_dart_generator::generate_dart_doc(ofstream& out, t_function* tfunction) {
+void t_dart_generator::generate_dart_doc(ostream& out, t_function* tfunction) {
   if (tfunction->has_doc()) {
     stringstream ss;
     ss << tfunction->get_doc();
@@ -2488,7 +2486,7 @@ std::string t_dart_generator::generate_isset_check(std::string field_name) {
   return "is" + get_cap_name("set") + get_cap_name(field_name) + "()";
 }
 
-void t_dart_generator::generate_isset_set(ofstream& out, t_field* field) {
+void t_dart_generator::generate_isset_set(ostream& out, t_field* field) {
   if (!type_can_be_null(field->get_type())) {
     string field_name = get_member_name(field->get_name());
     indent(out) << "this.__isset_" << field_name << " = true;" << endl;

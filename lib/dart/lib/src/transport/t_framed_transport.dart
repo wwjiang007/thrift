@@ -25,59 +25,151 @@ class TFramedTransport extends TBufferedTransport {
 
   final TTransport _transport;
 
-  final Uint8List headerBytes = new Uint8List(headerByteCount);
+  final Uint8List _headerBytes = Uint8List(headerByteCount);
+  int _receivedHeaderBytes = 0;
+
+  int _bodySize = 0;
+  Uint8List _body;
+  int _receivedBodyBytes = 0;
+
+  Completer<Uint8List> _frameCompleter;
 
   TFramedTransport(TTransport transport) : _transport = transport {
     if (transport == null) {
-      throw new ArgumentError.notNull("transport");
+      throw ArgumentError.notNull("transport");
     }
   }
 
+  @override
   bool get isOpen => _transport.isOpen;
 
+  @override
   Future open() {
     _reset(isOpen: true);
     return _transport.open();
   }
 
+  @override
   Future close() {
     _reset(isOpen: false);
     return _transport.close();
   }
 
+  @override
   int read(Uint8List buffer, int offset, int length) {
     if (hasReadData) {
       int got = super.read(buffer, offset, length);
       if (got > 0) return got;
     }
 
-    _readFrame();
+    // IMPORTANT: by the time you've got here,
+    // an entire frame is available for reading
 
     return super.read(buffer, offset, length);
   }
 
   void _readFrame() {
-    _transport.readAll(headerBytes, 0, headerByteCount);
-    int size = headerBytes.buffer.asByteData().getUint32(0);
-
-    if (size < 0) {
-      throw new TTransportError(
-          TTransportErrorType.UNKNOWN, "Read a negative frame size: $size");
+    if (_body == null) {
+      bool gotFullHeader = _readFrameHeader();
+      if (!gotFullHeader) {
+        return;
+      }
     }
 
-    Uint8List buffer = new Uint8List(size);
-    _transport.readAll(buffer, 0, size);
-    _setReadBuffer(buffer);
+    _readFrameBody();
   }
 
+  bool _readFrameHeader() {
+    var remainingHeaderBytes = headerByteCount - _receivedHeaderBytes;
+
+    int got = _transport.read(
+        _headerBytes, _receivedHeaderBytes, remainingHeaderBytes);
+    if (got < 0) {
+      throw TTransportError(TTransportErrorType.UNKNOWN,
+          "Socket closed during frame header read");
+    }
+
+    _receivedHeaderBytes += got;
+
+    if (_receivedHeaderBytes == headerByteCount) {
+      int size = _headerBytes.buffer.asByteData().getUint32(0);
+
+      _receivedHeaderBytes = 0;
+
+      if (size < 0) {
+        throw TTransportError(
+            TTransportErrorType.UNKNOWN, "Read a negative frame size: $size");
+      }
+
+      _bodySize = size;
+      _body = Uint8List(_bodySize);
+      _receivedBodyBytes = 0;
+
+      return true;
+    } else {
+      _registerForReadableBytes();
+      return false;
+    }
+  }
+
+  void _readFrameBody() {
+    var remainingBodyBytes = _bodySize - _receivedBodyBytes;
+
+    int got = _transport.read(_body, _receivedBodyBytes, remainingBodyBytes);
+    if (got < 0) {
+      throw TTransportError(
+          TTransportErrorType.UNKNOWN, "Socket closed during frame body read");
+    }
+
+    _receivedBodyBytes += got;
+
+    if (_receivedBodyBytes == _bodySize) {
+      var body = _body;
+
+      _bodySize = 0;
+      _body = null;
+      _receivedBodyBytes = 0;
+
+      _setReadBuffer(body);
+
+      var completer = _frameCompleter;
+      _frameCompleter = null;
+      completer.complete(Uint8List(0));
+    } else {
+      _registerForReadableBytes();
+    }
+  }
+
+  @override
   Future flush() {
-    Uint8List buffer = consumeWriteBuffer();
-    int length = buffer.length;
+    if (_frameCompleter == null) {
+      Uint8List buffer = consumeWriteBuffer();
+      int length = buffer.length;
 
-    headerBytes.buffer.asByteData().setUint32(0, length);
-    _transport.write(headerBytes, 0, headerByteCount);
-    _transport.write(buffer, 0, length);
+      _headerBytes.buffer.asByteData().setUint32(0, length);
+      _transport.write(_headerBytes, 0, headerByteCount);
+      _transport.write(buffer, 0, length);
 
-    return _transport.flush();
+      _frameCompleter = Completer<Uint8List>();
+      _registerForReadableBytes();
+    }
+
+    return _frameCompleter.future;
+  }
+
+  void _registerForReadableBytes() {
+    _transport.flush().then((_) {
+      _readFrame();
+    }).catchError((e) {
+      var completer = _frameCompleter;
+
+      _receivedHeaderBytes = 0;
+      _bodySize = 0;
+      _body = null;
+      _receivedBodyBytes = 0;
+      _frameCompleter = null;
+
+      completer.completeError(e);
+    });
   }
 }

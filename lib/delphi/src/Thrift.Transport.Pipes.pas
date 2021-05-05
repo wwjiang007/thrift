@@ -29,6 +29,7 @@ uses
   {$ELSE}
   Winapi.Windows, System.SysUtils, System.Math, Winapi.AccCtrl, Winapi.AclAPI, System.SyncObjs,
   {$ENDIF}
+  Thrift.Configuration,
   Thrift.Transport,
   Thrift.Utils,
   Thrift.Stream;
@@ -64,7 +65,9 @@ type
   public
     constructor Create( aEnableOverlapped : Boolean;
                         const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT;
-                        const aOpenTimeOut : DWORD = DEFAULT_THRIFT_PIPE_OPEN_TIMEOUT);
+                        const aOpenTimeOut : DWORD = DEFAULT_THRIFT_PIPE_OPEN_TIMEOUT
+                        ); reintroduce; overload;
+
     destructor Destroy;  override;
   end;
 
@@ -84,7 +87,8 @@ type
                         const aShareMode: DWORD = 0;
                         const aSecurityAttributes: PSecurityAttributes = nil;
                         const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT;
-                        const aOpenTimeOut : DWORD = DEFAULT_THRIFT_PIPE_OPEN_TIMEOUT);  overload;
+                        const aOpenTimeOut : DWORD = DEFAULT_THRIFT_PIPE_OPEN_TIMEOUT
+                        ); reintroduce; overload;
   end;
 
 
@@ -98,7 +102,9 @@ type
   public
     constructor Create( const aPipeHandle : THandle;
                         const aOwnsHandle, aEnableOverlapped : Boolean;
-                        const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT);  overload;
+                        const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT
+                        ); reintroduce; overload;
+
     destructor Destroy;  override;
   end;
 
@@ -112,7 +118,7 @@ type
 
 
   TPipeTransportBase = class( TStreamTransportImpl, IPipeTransport)
-  public
+  strict protected
     // ITransport
     function  GetIsOpen: Boolean; override;
     procedure Open; override;
@@ -123,33 +129,46 @@ type
   TNamedPipeTransportClientEndImpl = class( TPipeTransportBase)
   public
     // Named pipe constructors
-    constructor Create( aPipe : THandle; aOwnsHandle : Boolean;
-                        const aTimeOut : DWORD); overload;
+    constructor Create( const aPipe : THandle;
+                        const aOwnsHandle : Boolean;
+                        const aTimeOut : DWORD;
+                        const aConfig : IThriftConfiguration = nil
+						            );  reintroduce; overload;
+
     constructor Create( const aPipeName : string;
                         const aShareMode: DWORD = 0;
                         const aSecurityAttributes: PSecurityAttributes = nil;
                         const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT;
-                        const aOpenTimeOut : DWORD = DEFAULT_THRIFT_PIPE_OPEN_TIMEOUT);  overload;
+                        const aOpenTimeOut : DWORD = DEFAULT_THRIFT_PIPE_OPEN_TIMEOUT;
+                        const aConfig : IThriftConfiguration = nil
+						            );  reintroduce; overload;
   end;
 
 
   TNamedPipeTransportServerEndImpl = class( TNamedPipeTransportClientEndImpl)
   strict private
     FHandle : THandle;
-  public
+  strict protected
     // ITransport
     procedure Close; override;
-    constructor Create( aPipe : THandle; aOwnsHandle : Boolean;
-                        const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT); reintroduce;
+  public
+    constructor Create( const aPipe : THandle;
+                        const aOwnsHandle : Boolean;
+                        const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT;
+                        const aConfig : IThriftConfiguration = nil
+						            );  reintroduce; overload;
+
   end;
 
 
   TAnonymousPipeTransportImpl = class( TPipeTransportBase)
   public
     // Anonymous pipe constructor
-    constructor Create(const aPipeRead, aPipeWrite : THandle;
-                       aOwnsHandles : Boolean;
-                       const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT); overload;
+    constructor Create( const aPipeRead, aPipeWrite : THandle;
+                        const aOwnsHandles : Boolean;
+                        const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT;
+                        const aConfig : IThriftConfiguration = nil
+                        );  reintroduce; overload;
   end;
 
 
@@ -179,7 +198,7 @@ type
     procedure InternalClose; virtual; abstract;
     function QueryStopServer : Boolean;
   public
-    constructor Create;
+    constructor Create( const aConfig : IThriftConfiguration);
     destructor Destroy;  override;
     procedure Listen; override;
     procedure Close; override;
@@ -199,7 +218,7 @@ type
     FClientAnonWrite  : THandle;
 
     FTimeOut: DWORD;
-  protected
+  strict protected
     function Accept(const fnAccepting: TProc): ITransport; override;
 
     function CreateAnonPipe : Boolean;
@@ -213,8 +232,17 @@ type
     procedure InternalClose; override;
 
   public
-    constructor Create(aBufsize : Cardinal = 4096; aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT);
+    constructor Create( const aBufsize : Cardinal = 4096;
+                        const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT;
+                        const aConfig : IThriftConfiguration = nil
+                        );  reintroduce; overload;
   end;
+
+
+  TNamedPipeFlag = (
+    OnlyLocalClients   // sets PIPE_REJECT_REMOTE_CLIENTS
+  );
+  TNamedPipeFlags = set of TNamedPipeFlag;
 
 
   TNamedPipeServerTransportImpl = class( TPipeServerTransportBase, INamedPipeServerTransport)
@@ -225,7 +253,7 @@ type
     FTimeout      : DWORD;
     FHandle       : THandle;
     FConnected    : Boolean;
-
+    FOnlyLocalClients : Boolean;
 
   strict protected
     function Accept(const fnAccepting: TProc): ITransport; override;
@@ -237,13 +265,42 @@ type
     procedure InternalClose; override;
 
   public
-    constructor Create( aPipename : string; aBufsize : Cardinal = 4096;
-                        aMaxConns : Cardinal = PIPE_UNLIMITED_INSTANCES;
-                        aTimeOut : Cardinal = INFINITE);
+    constructor Create( const aPipename : string;
+                        const aBufsize : Cardinal = 4096;
+                        const aMaxConns : Cardinal = PIPE_UNLIMITED_INSTANCES;
+                        const aTimeOut : Cardinal = INFINITE;
+                        const aConfig : IThriftConfiguration = nil
+                        );  reintroduce; overload; deprecated 'use the other CTOR instead';
+
+    constructor Create( const aPipename : string;
+                        const aFlags : TNamedPipeFlags;
+                        const aConfig : IThriftConfiguration = nil;
+                        const aBufsize : Cardinal = 4096;
+                        const aMaxConns : Cardinal = PIPE_UNLIMITED_INSTANCES;
+                        const aTimeOut : Cardinal = INFINITE
+                        );  reintroduce; overload;
   end;
 
 
 implementation
+
+const
+  // flags used but not declared in all Delphi versions, see MSDN
+  PIPE_ACCEPT_REMOTE_CLIENTS = 0;           // CreateNamedPipe() -> dwPipeMode = default
+  PIPE_REJECT_REMOTE_CLIENTS = $00000008;   // CreateNamedPipe() -> dwPipeMode
+
+  // Windows platfoms only
+  // https://github.com/dotnet/coreclr/pull/379/files
+  // https://referencesource.microsoft.com/#System.Runtime.Remoting/channels/ipc/win32namedpipes.cs,46b96e3f3828f497,references
+  // Citation from the first source:
+  // > For mitigating local elevation of privilege attack through named pipes
+  // > make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
+  // > named pipe server can't impersonate a high privileged client security context
+  {$IFDEF MSWINDOWS}
+  PREVENT_PIPE_IMPERSONATION = SECURITY_SQOS_PRESENT or SECURITY_ANONYMOUS;
+  {$ELSE}
+  PREVENT_PIPE_IMPERSONATION = 0; // not available on Linux etc
+  {$ENDIF}
 
 
 procedure ClosePipeHandle( var hPipe : THandle);
@@ -270,15 +327,14 @@ end;
 { TPipeStreamBase }
 
 
-constructor TPipeStreamBase.Create( aEnableOverlapped : Boolean;
-                                    const aTimeOut, aOpenTimeOut : DWORD);
+constructor TPipeStreamBase.Create( aEnableOverlapped : Boolean; const aTimeOut, aOpenTimeOut : DWORD);
 begin
   inherited Create;
-  ASSERT( aTimeout > 0);  // aOpenTimeout may be 0
   FPipe        := INVALID_HANDLE_VALUE;
   FTimeout     := aTimeOut;
   FOpenTimeOut := aOpenTimeOut;
   FOverlapped  := aEnableOverlapped;
+  ASSERT( FTimeout > 0);  // FOpenTimeout may be 0
 end;
 
 
@@ -524,7 +580,7 @@ constructor TNamedPipeStreamImpl.Create( const aPipeName : string;
                                          const aSecurityAttributes: PSecurityAttributes;
                                          const aTimeOut, aOpenTimeOut : DWORD);
 begin
-  inherited Create( aEnableOverlapped, aTimeout, aOpenTimeOut);
+  inherited Create( aEnableOverlapped, aTimeOut, aOpenTimeOut);
 
   FPipeName        := aPipeName;
   FShareMode       := aShareMode;
@@ -537,7 +593,7 @@ end;
 
 procedure TNamedPipeStreamImpl.Open;
 var hPipe    : THandle;
-    retries, timeout, dwErr : DWORD;
+    retries, timeout, dwErr, dwFlagsAndAttributes : DWORD;
 const INTERVAL = 10; // ms
 begin
   if IsOpen then Exit;
@@ -563,14 +619,18 @@ begin
     Sleep(INTERVAL)
   end;
 
+  dwFlagsAndAttributes := FILE_FLAG_OVERLAPPED
+                       or FILE_FLAG_WRITE_THROUGH // async+fast, please
+                       or PREVENT_PIPE_IMPERSONATION;
+
   // open that thingy
   hPipe := CreateFile( PChar( FPipeName),
                        GENERIC_READ or GENERIC_WRITE,
-                       FShareMode,        // sharing
-                       FSecurityAttribs,  // security attributes
-                       OPEN_EXISTING,     // opens existing pipe
-                       FILE_FLAG_OVERLAPPED or FILE_FLAG_WRITE_THROUGH, // async+fast, please
-                       0);                // no template file
+                       FShareMode,            // sharing
+                       FSecurityAttribs,      // security attributes
+                       OPEN_EXISTING,         // opens existing pipe
+                       dwFlagsAndAttributes,  // flags + attribs
+                       0);                    // no template file
 
   if hPipe = INVALID_HANDLE_VALUE
   then raise TTransportExceptionNotOpen.Create('Unable to open pipe, '+SysErrorMessage(GetLastError));
@@ -587,7 +647,7 @@ constructor THandlePipeStreamImpl.Create( const aPipeHandle : THandle;
                                           const aOwnsHandle, aEnableOverlapped : Boolean;
                                           const aTimeOut : DWORD);
 begin
-  inherited Create( aEnableOverlapped, aTimeOut);
+  inherited Create( aEnableOverlapped, aTimeout, aTimeout);
 
   if aOwnsHandle
   then FSrcHandle := aPipeHandle
@@ -641,23 +701,27 @@ end;
 { TNamedPipeTransportClientEndImpl }
 
 
-constructor TNamedPipeTransportClientEndImpl.Create( const aPipeName : string; const aShareMode: DWORD;
-                                   const aSecurityAttributes: PSecurityAttributes;
-                                   const aTimeOut, aOpenTimeOut : DWORD);
+constructor TNamedPipeTransportClientEndImpl.Create( const aPipeName : string;
+                                                     const aShareMode: DWORD;
+                                                     const aSecurityAttributes: PSecurityAttributes;
+                                                     const aTimeOut, aOpenTimeOut : DWORD;
+                                                     const aConfig : IThriftConfiguration);
 // Named pipe constructor
 begin
-  inherited Create( nil, nil);
+  inherited Create( nil, nil, aConfig);
   FInputStream  := TNamedPipeStreamImpl.Create( aPipeName, TRUE, aShareMode, aSecurityAttributes, aTimeOut, aOpenTimeOut);
   FOutputStream := FInputStream;  // true for named pipes
 end;
 
 
-constructor TNamedPipeTransportClientEndImpl.Create( aPipe : THandle; aOwnsHandle : Boolean;
-                                                     const aTimeOut : DWORD);
+constructor TNamedPipeTransportClientEndImpl.Create( const aPipe : THandle;
+                                                     const aOwnsHandle : Boolean;
+                                                     const aTimeOut : DWORD;
+                                                     const aConfig : IThriftConfiguration);
 // Named pipe constructor
 begin
-  inherited Create( nil, nil);
-  FInputStream  := THandlePipeStreamImpl.Create( aPipe, TRUE, aOwnsHandle, aTimeOut);
+  inherited Create( nil, nil, aConfig);
+  FInputStream  := THandlePipeStreamImpl.Create( aPipe, aOwnsHandle, TRUE, aTimeOut);
   FOutputStream := FInputStream;  // true for named pipes
 end;
 
@@ -665,12 +729,14 @@ end;
 { TNamedPipeTransportServerEndImpl }
 
 
-constructor TNamedPipeTransportServerEndImpl.Create( aPipe : THandle; aOwnsHandle : Boolean;
-                                                     const aTimeOut : DWORD);
+constructor TNamedPipeTransportServerEndImpl.Create( const aPipe : THandle;
+                                                     const aOwnsHandle : Boolean;
+                                                     const aTimeOut : DWORD;
+                                                     const aConfig : IThriftConfiguration);
 // Named pipe constructor
 begin
   FHandle := DuplicatePipeHandle( aPipe);
-  inherited Create( aPipe, aOwnsHandle, aTimeOut);
+  inherited Create( aPipe, aOwnsHandle, aTimeout, aConfig);
 end;
 
 
@@ -688,23 +754,24 @@ end;
 
 
 constructor TAnonymousPipeTransportImpl.Create( const aPipeRead, aPipeWrite : THandle;
-                                                aOwnsHandles : Boolean;
-                                                const aTimeOut : DWORD = DEFAULT_THRIFT_TIMEOUT);
+                                                const aOwnsHandles : Boolean;
+                                                const aTimeOut : DWORD;
+                                                const aConfig : IThriftConfiguration);
 // Anonymous pipe constructor
 begin
-  inherited Create( nil, nil);
+  inherited Create( nil, nil, aConfig);
   // overlapped is not supported with AnonPipes, see MSDN
-  FInputStream  := THandlePipeStreamImpl.Create( aPipeRead, aOwnsHandles, FALSE, aTimeOut);
-  FOutputStream := THandlePipeStreamImpl.Create( aPipeWrite, aOwnsHandles, FALSE, aTimeOut);
+  FInputStream  := THandlePipeStreamImpl.Create( aPipeRead, aOwnsHandles, FALSE, aTimeout);
+  FOutputStream := THandlePipeStreamImpl.Create( aPipeWrite, aOwnsHandles, FALSE, aTimeout);
 end;
 
 
 { TPipeServerTransportBase }
 
 
-constructor TPipeServerTransportBase.Create;
+constructor TPipeServerTransportBase.Create( const aConfig : IThriftConfiguration);
 begin
-  inherited Create;
+  inherited Create( aConfig);
   FStopServer := TEvent.Create(nil,TRUE,FALSE,'');  // manual reset
 end;
 
@@ -741,11 +808,12 @@ end;
 
 { TAnonymousPipeServerTransportImpl }
 
-
-constructor TAnonymousPipeServerTransportImpl.Create(aBufsize : Cardinal; aTimeOut : DWORD);
+constructor TAnonymousPipeServerTransportImpl.Create( const aBufsize : Cardinal;
+                                                      const aTimeOut : DWORD;
+                                                      const aConfig : IThriftConfiguration);
 // Anonymous pipe CTOR
 begin
-  inherited Create;
+  inherited Create(aConfig);
   FBufsize  := aBufSize;
   FReadHandle := INVALID_HANDLE_VALUE;
   FWriteHandle := INVALID_HANDLE_VALUE;
@@ -774,7 +842,7 @@ begin
   then raise TTransportExceptionNotOpen.Create('TServerPipe unable to initiate pipe communication');
 
   // create the transport impl
-  result := TAnonymousPipeTransportImpl.Create( FReadHandle, FWriteHandle, FALSE, FTimeOut);
+  result := TAnonymousPipeTransportImpl.Create( FReadHandle, FWriteHandle, FALSE, FTimeOut, Configuration);
 end;
 
 
@@ -852,20 +920,36 @@ end;
 { TNamedPipeServerTransportImpl }
 
 
-constructor TNamedPipeServerTransportImpl.Create( aPipename : string; aBufsize, aMaxConns, aTimeOut : Cardinal);
+constructor TNamedPipeServerTransportImpl.Create( const aPipename : string;
+                                                  const aFlags : TNamedPipeFlags;
+                                                  const aConfig : IThriftConfiguration;
+                                                  const aBufsize, aMaxConns, aTimeOut : Cardinal);
 // Named Pipe CTOR
 begin
-  inherited Create;
-  ASSERT( aTimeout > 0);
+  inherited Create( aConfig);
   FPipeName  := aPipename;
   FBufsize   := aBufSize;
   FMaxConns  := Max( 1, Min( PIPE_UNLIMITED_INSTANCES, aMaxConns));
   FHandle    := INVALID_HANDLE_VALUE;
   FTimeout   := aTimeOut;
   FConnected := FALSE;
+  ASSERT( FTimeout > 0);
+
+  FOnlyLocalClients := (TNamedPipeFlag.OnlyLocalClients in aFlags);
 
   if Copy(FPipeName,1,2) <> '\\'
   then FPipeName := '\\.\pipe\' + FPipeName;  // assume localhost
+end;
+
+
+constructor TNamedPipeServerTransportImpl.Create( const aPipename : string;
+                                                  const aBufsize, aMaxConns, aTimeOut : Cardinal;
+                                                  const aConfig : IThriftConfiguration);
+// Named Pipe CTOR (deprecated)
+begin
+  {$WARN SYMBOL_DEPRECATED OFF}  // Delphi XE emits a false warning here
+  Create( aPipeName, [], aConfig, aBufsize, aMaxConns, aTimeOut);
+  {$WARN SYMBOL_DEPRECATED ON}
 end;
 
 
@@ -931,7 +1015,7 @@ begin
   hPipe := THandle( InterlockedExchangePointer( Pointer(FHandle), Pointer(INVALID_HANDLE_VALUE)));
   try
     FConnected := FALSE;
-    result := TNamedPipeTransportServerEndImpl.Create( hPipe, TRUE, FTimeout);
+    result := TNamedPipeTransportServerEndImpl.Create( hPipe, TRUE, FTimeout, Configuration);
   except
     ClosePipeHandle(hPipe);
     raise;
@@ -974,6 +1058,7 @@ var SIDAuthWorld : SID_IDENTIFIER_AUTHORITY ;
     acl          : PACL;
     sd           : PSECURITY_DESCRIPTOR;
     sa           : SECURITY_ATTRIBUTES;
+    dwPipeModeXtra : DWORD;
 const
   SECURITY_WORLD_SID_AUTHORITY  : TSIDIdentifierAuthority = (Value : (0,0,0,0,0,1));
   SECURITY_WORLD_RID = $00000000;
@@ -1007,22 +1092,24 @@ begin
     sa.lpSecurityDescriptor := sd;
     sa.bInheritHandle       := FALSE;
 
+    // any extra flags we want to add to dwPipeMode
+    dwPipeModeXtra := 0;
+    if FOnlyLocalClients then dwPipeModeXtra := dwPipeModeXtra or PIPE_REJECT_REMOTE_CLIENTS;
+
     // Create an instance of the named pipe
     {$IFDEF OLD_UNIT_NAMES}
     result := Windows.CreateNamedPipe(
     {$ELSE}
     result := Winapi.Windows.CreateNamedPipe(
     {$ENDIF}
-        PChar( FPipeName),        // pipe name
-        PIPE_ACCESS_DUPLEX or     // read/write access
-        FILE_FLAG_OVERLAPPED,     // async mode
-        PIPE_TYPE_BYTE or         // byte type pipe
-        PIPE_READMODE_BYTE,       // byte read mode
-        FMaxConns,                // max. instances
-        FBufSize,                 // output buffer size
-        FBufSize,                 // input buffer size
-        FTimeout,                 // time-out, see MSDN
-        @sa                       // default security attribute
+        PChar( FPipeName),             // pipe name
+        PIPE_ACCESS_DUPLEX or FILE_FLAG_OVERLAPPED,              // read/write access + async mode
+        PIPE_TYPE_BYTE or PIPE_READMODE_BYTE or dwPipeModeXtra,  // byte type pipe + byte read mode + extras
+        FMaxConns,                     // max. instances
+        FBufSize,                      // output buffer size
+        FBufSize,                      // input buffer size
+        FTimeout,                      // time-out, see MSDN
+        @sa                            // default security attribute
     );
 
     if( result <> INVALID_HANDLE_VALUE)

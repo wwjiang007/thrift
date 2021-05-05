@@ -31,17 +31,11 @@
 #include <thrift/thrift-config.h>
 
 // boost
-#include <boost/noncopyable.hpp>
+#include <thrift/TNonCopyable.h>
 
-#if USE_BOOST_THREAD
-#include <boost/thread/once.hpp>
-#elif USE_STD_THREAD
+#include <memory>
 #include <mutex>
-#else
-#error For windows you must choose USE_BOOST_THREAD or USE_STD_THREAD
-#endif
 
-#include <thrift/stdcxx.h>
 
 namespace apache {
 namespace thrift {
@@ -51,10 +45,10 @@ namespace transport {
  * Winsock2 must be intialised once only in order to create sockets. This class
  * performs a one time initialisation when create is called.
  */
-class TWinsockSingleton : private boost::noncopyable {
+class TWinsockSingleton : private apache::thrift::TNonCopyable {
 
 public:
-  typedef stdcxx::shared_ptr<TWinsockSingleton> instance_ptr;
+  typedef std::shared_ptr<TWinsockSingleton> instance_ptr;
 
 private:
   TWinsockSingleton(void);
@@ -70,13 +64,7 @@ private:
 
 private:
   static instance_ptr instance_ptr_;
-#if USE_BOOST_THREAD
-  static boost::once_flag flags_;
-#elif USE_STD_THREAD
   static std::once_flag flags_;
-#else
-#error Need a non-Boost non-C++11 way to track single initialization here.
-#endif
 };
 }
 }

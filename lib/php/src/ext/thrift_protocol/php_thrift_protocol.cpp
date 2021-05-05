@@ -85,17 +85,10 @@ const int8_t T_EXCEPTION = 3;
 const int INVALID_DATA = 1;
 const int BAD_VERSION = 4;
 
-static zend_function_entry thrift_protocol_functions[] = {
-  PHP_FE(thrift_protocol_write_binary, nullptr)
-  PHP_FE(thrift_protocol_read_binary, nullptr)
-  PHP_FE(thrift_protocol_read_binary_after_message_begin, nullptr)
-  {nullptr, nullptr, nullptr}
-};
-
 zend_module_entry thrift_protocol_module_entry = {
   STANDARD_MODULE_HEADER,
   "thrift_protocol",
-  thrift_protocol_functions,
+  ext_functions,
   nullptr,
   nullptr,
   nullptr,
@@ -305,7 +298,7 @@ public:
 
   void skip(size_t len) {
     while (len) {
-      size_t chunk_size = std::min(len, buffer_used);
+      size_t chunk_size = (std::min)(len, buffer_used);
       if (chunk_size) {
         buffer_ptr = reinterpret_cast<char*>(buffer_ptr) + chunk_size;
         buffer_used -= chunk_size;
@@ -318,7 +311,7 @@ public:
 
   void readBytes(void* buf, size_t len) {
     while (len) {
-      size_t chunk_size = std::min(len, buffer_used);
+      size_t chunk_size = (std::min)(len, buffer_used);
       if (chunk_size) {
         memcpy(buf, buffer_ptr, chunk_size);
         buffer_ptr = reinterpret_cast<char*>(buffer_ptr) + chunk_size;
@@ -414,7 +407,7 @@ void createObject(const char* obj_typename, zval* return_value, int nargs = 0, z
   object_and_properties_init(return_value, ce, nullptr);
   zend_function* constructor = zend_std_get_constructor(Z_OBJ_P(return_value));
   zval ctor_rv;
-  zend_call_method(return_value, ce, &constructor, NULL, 0, &ctor_rv, nargs, arg1, arg2);
+  zend_call_method(Z4_OBJ_P(return_value), ce, &constructor, nullptr, 0, &ctor_rv, nargs, arg1, arg2);
   zval_dtor(&ctor_rv);
   if (EG(exception)) {
     zend_object *ex = EG(exception);
@@ -537,6 +530,7 @@ void binary_deserialize(int8_t thrift_typeID, PHPInputTransport& transport, zval
       }
 
       zval* spec = zend_read_static_property(Z_OBJCE_P(return_value), "_TSPEC", sizeof("_TSPEC")-1, false);
+      ZVAL_DEREF(spec);
       if (EG(exception)) {
         zend_object *ex = EG(exception);
         EG(exception) = nullptr;
@@ -699,6 +693,9 @@ void binary_serialize_hashtable_key(int8_t keytype, PHPOutputTransport& transpor
 
 static
 void binary_serialize(int8_t thrift_typeID, PHPOutputTransport& transport, zval* value, HashTable* fieldspec) {
+  if (value) {
+    ZVAL_DEREF(value);
+  }
   // At this point the typeID (and field num, if applicable) should've already been written to the output so all we need to do is write the payload.
   switch (thrift_typeID) {
     case T_STOP:
@@ -709,6 +706,9 @@ void binary_serialize(int8_t thrift_typeID, PHPOutputTransport& transport, zval*
         throw_tprotocolexception("Attempt to send non-object type as a T_STRUCT", INVALID_DATA);
       }
       zval* spec = zend_read_static_property(Z_OBJCE_P(value), "_TSPEC", sizeof("_TSPEC")-1, true);
+      if (spec && Z_TYPE_P(spec) == IS_REFERENCE) {
+        ZVAL_DEREF(spec);
+      }
       if (!spec || Z_TYPE_P(spec) != IS_ARRAY) {
         throw_tprotocolexception("Attempt to send non-Thrift object as a T_STRUCT", INVALID_DATA);
       }
@@ -893,7 +893,13 @@ static
 void validate_thrift_object(zval* object) {
     zend_class_entry* object_class_entry = Z_OBJCE_P(object);
     zval* is_validate = zend_read_static_property(object_class_entry, "isValidate", sizeof("isValidate")-1, true);
+    if (is_validate) {
+      ZVAL_DEREF(is_validate);
+    }
     zval* spec = zend_read_static_property(object_class_entry, "_TSPEC", sizeof("_TSPEC")-1, true);
+    if (spec) {
+      ZVAL_DEREF(spec);
+    }
     HashPosition key_ptr;
     zval* val_ptr;
 
@@ -915,7 +921,7 @@ void validate_thrift_object(zval* object) {
 
             zval* is_required = zend_hash_str_find(fieldspec, "isRequired", sizeof("isRequired")-1);
             zval rv;
-            zval* prop = zend_read_property(object_class_entry, object, varname, strlen(varname), false, &rv);
+            zval* prop = zend_read_property(object_class_entry, Z4_OBJ_P(object), varname, strlen(varname), false, &rv);
 
             if (Z_TYPE_INFO_P(is_required) == IS_TRUE && Z_TYPE_P(prop) == IS_NULL) {
                 char errbuf[128];
@@ -956,7 +962,7 @@ void binary_deserialize_spec(zval* zthis, PHPInputTransport& transport, HashTabl
         ZVAL_UNDEF(&rv);
 
         binary_deserialize(ttype, transport, &rv, fieldspec);
-        zend_update_property(ce, zthis, varname, strlen(varname), &rv);
+        zend_update_property(ce, Z4_OBJ_P(zthis), varname, strlen(varname), &rv);
 
         zval_ptr_dtor(&rv);
       } else {
@@ -997,10 +1003,10 @@ void binary_serialize_spec(zval* zthis, PHPOutputTransport& transport, HashTable
     int8_t ttype = Z_LVAL_P(val_ptr);
 
     zval rv;
-    zval* prop = zend_read_property(Z_OBJCE_P(zthis), zthis, varname, strlen(varname), false, &rv);
+    zval* prop = zend_read_property(Z_OBJCE_P(zthis), Z4_OBJ_P(zthis), varname, strlen(varname), false, &rv);
 
     if (Z_TYPE_P(prop) == IS_REFERENCE){
-      ZVAL_UNREF(prop);
+      ZVAL_DEREF(prop);
     }
     if (Z_TYPE_P(prop) != IS_NULL) {
       transport.writeI8(ttype);
@@ -1027,6 +1033,9 @@ PHP_FUNCTION(thrift_protocol_write_binary) {
 
   try {
     zval* spec = zend_read_static_property(Z_OBJCE_P(request_struct), "_TSPEC", sizeof("_TSPEC")-1, true);
+    if (spec) {
+      ZVAL_DEREF(spec);
+    }
 
     if (!spec || Z_TYPE_P(spec) != IS_ARRAY) {
       throw_tprotocolexception("Attempt serialize from non-Thrift object", INVALID_DATA);
@@ -1091,6 +1100,7 @@ PHP_FUNCTION(thrift_protocol_read_binary) {
       zval ex;
       createObject("\\Thrift\\Exception\\TApplicationException", &ex);
       zval* spec = zend_read_static_property(Z_OBJCE(ex), "_TSPEC", sizeof("_TPSEC")-1, false);
+      ZVAL_DEREF(spec);
       if (EG(exception)) {
         zend_object *ex = EG(exception);
         EG(exception) = nullptr;
@@ -1102,6 +1112,9 @@ PHP_FUNCTION(thrift_protocol_read_binary) {
 
     createObject(ZSTR_VAL(obj_typename), return_value);
     zval* spec = zend_read_static_property(Z_OBJCE_P(return_value), "_TSPEC", sizeof("_TSPEC")-1, true);
+    if (spec) {
+      ZVAL_DEREF(spec);
+    }
     if (!spec || Z_TYPE_P(spec) != IS_ARRAY) {
       throw_tprotocolexception("Attempt deserialize to non-Thrift object", INVALID_DATA);
     }
@@ -1135,6 +1148,7 @@ PHP_FUNCTION(thrift_protocol_read_binary_after_message_begin) {
 
     createObject(ZSTR_VAL(obj_typename), return_value);
     zval* spec = zend_read_static_property(Z_OBJCE_P(return_value), "_TSPEC", sizeof("_TSPEC")-1, false);
+    ZVAL_DEREF(spec);
     binary_deserialize_spec(return_value, transport, Z_ARRVAL_P(spec));
   } catch (const PHPExceptionWrapper& ex) {
     // ex will be destructed, so copy to a zval that zend_throw_exception_object can take ownership of

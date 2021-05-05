@@ -1,5 +1,3 @@
-// +build !go1.7
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -22,12 +20,12 @@
 package tests
 
 import (
+	"context"
 	"errors"
-	"thrift"
-	"thrifttest"
 	"time"
 
-	"golang.org/x/net/context"
+	"github.com/apache/thrift/lib/go/test/gopath/src/thrifttest"
+	"github.com/apache/thrift/lib/go/thrift"
 )
 
 type SecondServiceHandler struct {
@@ -182,7 +180,7 @@ func (p *ThriftTestHandler) TestException(ctx context.Context, arg string) (err 
 		x.Message = arg
 		return x
 	} else if arg == "TException" {
-		return thrift.TException(errors.New(arg))
+		return thrift.WrapTException(errors.New(arg))
 	} else {
 		return nil
 	}

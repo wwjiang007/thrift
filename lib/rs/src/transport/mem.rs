@@ -31,7 +31,7 @@ use super::{ReadHalf, TIoChannel, WriteHalf};
 /// `set_readable_bytes(...)`. Callers can then read until the buffer is
 /// depleted. No further reads are accepted until the internal read buffer is
 /// replenished again.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TBufferChannel {
     read: Arc<Mutex<ReadData>>,
     write: Arc<Mutex<WriteData>>,
@@ -57,25 +57,17 @@ impl TBufferChannel {
     /// read buffer capacity and write buffer capacity.
     pub fn with_capacity(read_capacity: usize, write_capacity: usize) -> TBufferChannel {
         TBufferChannel {
-            read: Arc::new(
-                Mutex::new(
-                    ReadData {
-                        buf: vec![0; read_capacity].into_boxed_slice(),
-                        idx: 0,
-                        pos: 0,
-                        cap: read_capacity,
-                    },
-                ),
-            ),
-            write: Arc::new(
-                Mutex::new(
-                    WriteData {
-                        buf: vec![0; write_capacity].into_boxed_slice(),
-                        pos: 0,
-                        cap: write_capacity,
-                    },
-                ),
-            ),
+            read: Arc::new(Mutex::new(ReadData {
+                buf: vec![0; read_capacity].into_boxed_slice(),
+                idx: 0,
+                pos: 0,
+                cap: read_capacity,
+            })),
+            write: Arc::new(Mutex::new(WriteData {
+                buf: vec![0; write_capacity].into_boxed_slice(),
+                pos: 0,
+                cap: write_capacity,
+            })),
         }
     }
 
@@ -147,24 +139,26 @@ impl TBufferChannel {
 }
 
 impl TIoChannel for TBufferChannel {
-    fn split(self) -> ::Result<(ReadHalf<Self>, WriteHalf<Self>)>
+    fn split(self) -> crate::Result<(ReadHalf<Self>, WriteHalf<Self>)>
     where
         Self: Sized,
     {
-        Ok(
-            (ReadHalf {
-                 handle: TBufferChannel {
-                     read: self.read.clone(),
-                     write: self.write.clone(),
-                 },
-             },
-             WriteHalf {
-                 handle: TBufferChannel {
-                     read: self.read.clone(),
-                     write: self.write.clone(),
-                 },
-             }),
-        )
+        Ok((
+            ReadHalf {
+                handle: TBufferChannel {
+                    read: self.read.clone(),
+                    write: self.write.clone(),
+                },
+            },
+            WriteHalf {
+                handle: TBufferChannel {
+                    read: self.read.clone(),
+                    // NOTE: not cloning here, since this is the last statement
+                    // in this method and `write` can take ownership of `self.write`
+                    write: self.write,
+                },
+            },
+        ))
     }
 }
 

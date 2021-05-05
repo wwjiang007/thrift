@@ -20,14 +20,16 @@
 package common
 
 import (
+	"context"
 	"errors"
-	"gen/thrifttest"
 	"reflect"
 	"sync"
 	"testing"
-	"thrift"
 
 	"github.com/golang/mock/gomock"
+
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/apache/thrift/test/go/src/gen/thrifttest"
 )
 
 type test_unit struct {
@@ -83,8 +85,8 @@ func doUnit(t *testing.T, unit *test_unit) {
 }
 
 var rmapmap = map[int32]map[int32]int32{
-	-4: map[int32]int32{-4: -4, -3: -3, -2: -2, -1: -1},
-	4:  map[int32]int32{4: 4, 3: 3, 2: 2, 1: 1},
+	-4: {-4: -4, -3: -3, -2: -2, -1: -1},
+	4:  {4: 4, 3: 3, 2: 2, 1: 1},
 }
 
 var xxs = &thrifttest.Xtruct{
@@ -95,6 +97,7 @@ var xxs = &thrifttest.Xtruct{
 }
 
 var xcept = &thrifttest.Xception{ErrorCode: 1001, Message: "some"}
+var defaultCtx = context.Background()
 
 func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, handler *MockThriftTest) {
 	gomock.InOrder(
@@ -127,12 +130,12 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 	)
 	var err error
 	if err = client.TestVoid(defaultCtx); err != nil {
-		t.Errorf("Unexpected error in TestVoid() call: ", err)
+		t.Errorf("Unexpected error in TestVoid() call: %s", err)
 	}
 
 	thing, err := client.TestString(defaultCtx, "thing")
 	if err != nil {
-		t.Errorf("Unexpected error in TestString() call: ", err)
+		t.Errorf("Unexpected error in TestString() call: %s", err)
 	}
 	if thing != "thing" {
 		t.Errorf("Unexpected TestString() result, expected 'thing' got '%s' ", thing)
@@ -140,22 +143,22 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	bl, err := client.TestBool(defaultCtx, true)
 	if err != nil {
-		t.Errorf("Unexpected error in TestBool() call: ", err)
+		t.Errorf("Unexpected error in TestBool() call: %s", err)
 	}
 	if !bl {
-		t.Errorf("Unexpected TestBool() result expected true, got %f ", bl)
+		t.Errorf("Unexpected TestBool() result expected true, got %v ", bl)
 	}
 	bl, err = client.TestBool(defaultCtx, false)
 	if err != nil {
-		t.Errorf("Unexpected error in TestBool() call: ", err)
+		t.Errorf("Unexpected error in TestBool() call: %s", err)
 	}
 	if bl {
-		t.Errorf("Unexpected TestBool() result expected false, got %f ", bl)
+		t.Errorf("Unexpected TestBool() result expected false, got %v ", bl)
 	}
 
 	b, err := client.TestByte(defaultCtx, 42)
 	if err != nil {
-		t.Errorf("Unexpected error in TestByte() call: ", err)
+		t.Errorf("Unexpected error in TestByte() call: %s", err)
 	}
 	if b != 42 {
 		t.Errorf("Unexpected TestByte() result expected 42, got %d ", b)
@@ -163,7 +166,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	i32, err := client.TestI32(defaultCtx, 4242)
 	if err != nil {
-		t.Errorf("Unexpected error in TestI32() call: ", err)
+		t.Errorf("Unexpected error in TestI32() call: %s", err)
 	}
 	if i32 != 4242 {
 		t.Errorf("Unexpected TestI32() result expected 4242, got %d ", i32)
@@ -171,7 +174,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	i64, err := client.TestI64(defaultCtx, 424242)
 	if err != nil {
-		t.Errorf("Unexpected error in TestI64() call: ", err)
+		t.Errorf("Unexpected error in TestI64() call: %s", err)
 	}
 	if i64 != 424242 {
 		t.Errorf("Unexpected TestI64() result expected 424242, got %d ", i64)
@@ -179,7 +182,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	d, err := client.TestDouble(defaultCtx, 42.42)
 	if err != nil {
-		t.Errorf("Unexpected error in TestDouble() call: ", err)
+		t.Errorf("Unexpected error in TestDouble() call: %s", err)
 	}
 	if d != 42.42 {
 		t.Errorf("Unexpected TestDouble() result expected 42.42, got %f ", d)
@@ -194,7 +197,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 	xs.I64Thing = 424242
 	xsret, err := client.TestStruct(defaultCtx, xs)
 	if err != nil {
-		t.Errorf("Unexpected error in TestStruct() call: ", err)
+		t.Errorf("Unexpected error in TestStruct() call: %s", err)
 	}
 	if *xs != *xsret {
 		t.Errorf("Unexpected TestStruct() result expected %#v, got %#v ", xs, xsret)
@@ -204,7 +207,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 	x2.StructThing = xs
 	x2ret, err := client.TestNest(defaultCtx, x2)
 	if err != nil {
-		t.Errorf("Unexpected error in TestNest() call: ", err)
+		t.Errorf("Unexpected error in TestNest() call: %s", err)
 	}
 	if !reflect.DeepEqual(x2, x2ret) {
 		t.Errorf("Unexpected TestNest() result expected %#v, got %#v ", x2, x2ret)
@@ -213,7 +216,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 	m := map[int32]int32{1: 2, 3: 4, 5: 42}
 	mret, err := client.TestMap(defaultCtx, m)
 	if err != nil {
-		t.Errorf("Unexpected error in TestMap() call: ", err)
+		t.Errorf("Unexpected error in TestMap() call: %s", err)
 	}
 	if !reflect.DeepEqual(m, mret) {
 		t.Errorf("Unexpected TestMap() result expected %#v, got %#v ", m, mret)
@@ -222,7 +225,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 	sm := map[string]string{"a": "2", "b": "blah", "some": "thing"}
 	smret, err := client.TestStringMap(defaultCtx, sm)
 	if err != nil {
-		t.Errorf("Unexpected error in TestStringMap() call: ", err)
+		t.Errorf("Unexpected error in TestStringMap() call: %s", err)
 	}
 	if !reflect.DeepEqual(sm, smret) {
 		t.Errorf("Unexpected TestStringMap() result expected %#v, got %#v ", sm, smret)
@@ -231,7 +234,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 	s := []int32{1, 2, 42}
 	sret, err := client.TestSet(defaultCtx, s)
 	if err != nil {
-		t.Errorf("Unexpected error in TestSet() call: ", err)
+		t.Errorf("Unexpected error in TestSet() call: %s", err)
 	}
 	// Sets can be in any order, but Go slices are ordered, so reflect.DeepEqual won't work.
 	stemp := map[int32]struct{}{}
@@ -247,7 +250,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 	l := []int32{1, 2, 42}
 	lret, err := client.TestList(defaultCtx, l)
 	if err != nil {
-		t.Errorf("Unexpected error in TestList() call: ", err)
+		t.Errorf("Unexpected error in TestList() call: %s", err)
 	}
 	if !reflect.DeepEqual(l, lret) {
 		t.Errorf("Unexpected TestList() result expected %#v, got %#v ", l, lret)
@@ -255,7 +258,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	eret, err := client.TestEnum(defaultCtx, thrifttest.Numberz_TWO)
 	if err != nil {
-		t.Errorf("Unexpected error in TestEnum() call: ", err)
+		t.Errorf("Unexpected error in TestEnum() call: %s", err)
 	}
 	if eret != thrifttest.Numberz_TWO {
 		t.Errorf("Unexpected TestEnum() result expected %#v, got %#v ", thrifttest.Numberz_TWO, eret)
@@ -263,7 +266,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	tret, err := client.TestTypedef(defaultCtx, thrifttest.UserId(42))
 	if err != nil {
-		t.Errorf("Unexpected error in TestTypedef() call: ", err)
+		t.Errorf("Unexpected error in TestTypedef() call: %s", err)
 	}
 	if tret != thrifttest.UserId(42) {
 		t.Errorf("Unexpected TestTypedef() result expected %#v, got %#v ", thrifttest.UserId(42), tret)
@@ -271,7 +274,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	mapmap, err := client.TestMapMap(defaultCtx, 42)
 	if err != nil {
-		t.Errorf("Unexpected error in TestMapmap() call: ", err)
+		t.Errorf("Unexpected error in TestMapmap() call: %s", err)
 	}
 	if !reflect.DeepEqual(mapmap, rmapmap) {
 		t.Errorf("Unexpected TestMapmap() result expected %#v, got %#v ", rmapmap, mapmap)
@@ -279,7 +282,7 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	xxsret, err := client.TestMulti(defaultCtx, 42, 4242, 424242, map[int16]string{1: "blah", 2: "thing"}, thrifttest.Numberz_EIGHT, thrifttest.UserId(24))
 	if err != nil {
-		t.Errorf("Unexpected error in TestMulti() call: %v", err)
+		t.Errorf("Unexpected error in TestMulti() call: %s", err)
 	}
 	if !reflect.DeepEqual(xxs, xxsret) {
 		t.Errorf("Unexpected TestMulti() result expected %#v, got %#v ", xxs, xxsret)
@@ -323,11 +326,11 @@ func callEverythingWithMock(t *testing.T, client *thrifttest.ThriftTestClient, h
 
 	err = client.TestOneway(defaultCtx, 2)
 	if err != nil {
-		t.Errorf("Unexpected error in TestOneway() call: ", err)
+		t.Errorf("Unexpected error in TestOneway() call: %s", err)
 	}
 
 	//Make sure the connection still alive
 	if err = client.TestVoid(defaultCtx); err != nil {
-		t.Errorf("Unexpected error in TestVoid() call: ", err)
+		t.Errorf("Unexpected error in TestVoid() call: %s", err)
 	}
 }

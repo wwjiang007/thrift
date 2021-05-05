@@ -67,17 +67,17 @@ public:
   /**
    * Init and end of generator
    */
-  void init_generator();
-  void close_generator();
+  void init_generator() override;
+  void close_generator() override;
 
   /**
    * Program-level generation functions
    */
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
-  void generate_const(t_const* tconst);
-  void generate_struct(t_struct* tstruct);
-  void generate_service(t_service* tservice);
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
+  void generate_const(t_const* tconst) override;
+  void generate_struct(t_struct* tstruct) override;
+  void generate_service(t_service* tservice) override;
 
 protected:
   /**
@@ -87,7 +87,7 @@ protected:
   void print_const_value(t_type* type, t_const_value* tvalue);
 
 private:
-  std::ofstream f_out_;
+  ofstream_with_content_based_conditional_update f_out_;
   std::list<string> edges;
   bool exception_arrows;
 };
@@ -249,8 +249,8 @@ void t_gv_generator::print_const_value(t_type* type, t_const_value* tvalue) {
     break;
   case t_const_value::CV_MAP: {
     f_out_ << "\\{ ";
-    map<t_const_value*, t_const_value*> map_elems = tvalue->get_map();
-    map<t_const_value*, t_const_value*>::iterator map_iter;
+    map<t_const_value*, t_const_value*, t_const_value::value_compare> map_elems = tvalue->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::iterator map_iter;
     for (map_iter = map_elems.begin(); map_iter != map_elems.end(); map_iter++) {
       if (!first) {
         f_out_ << ", ";
@@ -314,7 +314,7 @@ void t_gv_generator::generate_service(t_service* tservice) {
     for (; arg_iter != args.end(); arg_iter++) {
       f_out_ << "|<param_" << (*arg_iter)->get_name() << ">";
       f_out_ << (*arg_iter)->get_name();
-      if ((*arg_iter)->get_value() != NULL) {
+      if ((*arg_iter)->get_value() != nullptr) {
         f_out_ << " = ";
         print_const_value((*arg_iter)->get_type(), (*arg_iter)->get_value());
       }

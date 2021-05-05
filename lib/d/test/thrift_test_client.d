@@ -19,7 +19,7 @@
 module thrift_test_client;
 
 import std.conv;
-import std.datetime;
+import std.datetime.stopwatch;
 import std.exception : enforce;
 import std.getopt;
 import std.stdio;
@@ -35,6 +35,7 @@ import thrift.transport.base;
 import thrift.transport.buffered;
 import thrift.transport.framed;
 import thrift.transport.http;
+import thrift.transport.zlib;
 import thrift.transport.socket;
 import thrift.transport.ssl;
 import thrift.util.hashset;
@@ -47,6 +48,7 @@ enum TransportType {
   buffered,
   framed,
   http,
+  zlib,
   raw
 }
 
@@ -68,6 +70,7 @@ void main(string[] args) {
   bool ssl;
   ProtocolType protocolType;
   TransportType transportType;
+  bool zlib;
   bool trace;
 
   getopt(args,
@@ -75,6 +78,7 @@ void main(string[] args) {
     "protocol", &protocolType,
     "ssl", &ssl,
     "transport", &transportType,
+    "zlib", &zlib,
     "trace", &trace,
     "port", &port,
     "host", (string _, string value) {
@@ -102,22 +106,28 @@ void main(string[] args) {
     socket = new TSocket(host, port);
   }
 
-  TProtocol protocol;
+  TTransport transport;
   final switch (transportType) {
     case TransportType.buffered:
-      protocol = createProtocol(new TBufferedTransport(socket), protocolType);
+      transport = new TBufferedTransport(socket);
       break;
     case TransportType.framed:
-      protocol = createProtocol(new TFramedTransport(socket), protocolType);
+      transport = new TFramedTransport(socket);
       break;
     case TransportType.http:
-      protocol = createProtocol(
-        new TClientHttpTransport(socket, host, "/service"), protocolType);
+      transport = new TClientHttpTransport(socket, host, "/service");
+      break;
+    case TransportType.zlib:
+      transport = new TZlibTransport(socket);
       break;
     case TransportType.raw:
-      protocol = createProtocol(socket, protocolType);
+      transport = socket;
       break;
   }
+  if (zlib && transportType != TransportType.zlib) {
+    transport = new TZlibTransport(socket);
+  }
+  TProtocol protocol = createProtocol(transport, protocolType);
 
   auto client = tClient!ThriftTest(protocol);
 
@@ -338,14 +348,14 @@ void main(string[] args) {
       auto onewayWatch = StopWatch(AutoStart.yes);
       client.testOneway(3);
       onewayWatch.stop();
-      if (onewayWatch.peek().msecs > 200) {
+      if (onewayWatch.peek.total!"msecs" > 200) {
         if (trace) {
-          writefln("  FAILURE - took %s ms", onewayWatch.peek().usecs / 1000.0);
+          writefln("  FAILURE - took %s ms", onewayWatch.peek.total!"usecs" / 1000.0);
         }
         throw new Exception("testOneway failed.");
       } else {
         if (trace) {
-          writefln("  success - took %s ms", onewayWatch.peek().usecs / 1000.0);
+          writefln("  success - took %s ms", onewayWatch.peek.total!"usecs"  / 1000.0);
         }
       }
 
@@ -360,7 +370,7 @@ void main(string[] args) {
     // Time metering.
     sw.stop();
 
-    immutable tot = sw.peek().usecs;
+    immutable tot = sw.peek.total!"usecs" ;
     if (trace) writefln("Total time: %s us\n", tot);
 
     time_tot += tot;

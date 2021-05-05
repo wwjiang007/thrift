@@ -23,18 +23,12 @@ THRIFT_FILES = $(wildcard test/*.thrift) \
 		  $(THRIFT_OMIT_FILE) \
 		  ../../test/ConstantsDemo.thrift \
 		  ../../test/NameConflictTest.thrift \
+		  ../../test/DoubleConstantsTest.thrift \
 		  ../../test/ThriftTest.thrift
 
-if ERLANG_OTP16
-ERL_FLAG = erl:otp16
-ERL_FLAG_LEGACY = erl:otp16,legacynames
-# otp16 + maps does not make sense. We need to generate it anyway to avoid include error.
-ERL_FLAG_MAPS = erl:otp16
-else
 ERL_FLAG = erl
 ERL_FLAG_LEGACY = erl:legacynames
 ERL_FLAG_MAPS = erl:maps
-endif
 
 $(THRIFT_OMIT_FILE): test/Thrift_omit_with.thrift
 	grep -v omit $< >$@
@@ -48,13 +42,10 @@ $(THRIFT_OMIT_FILE): test/Thrift_omit_with.thrift
 	touch .generated
 
 all: .generated
-	$(REBAR) get-deps
 	$(REBAR) compile
 
 check: .generated
-	$(REBAR) -C rebar.test.config get-deps
-	$(REBAR) -C rebar.test.config compile
-	$(REBAR) -C rebar.test.config skip_deps=true eunit
+	$(REBAR) eunit
 
 install: all
 	mkdir -p $(DESTDIR)$(ERLANG_INSTALL_LIB_DIR_thrift) ; \
@@ -66,16 +57,26 @@ install: all
 	done
 
 uninstall:
-	rm -rf $(DESTDIR)$(ERLANG_INSTALL_LIB_DIR_thrift)
+	$(RM) -rf $(DESTDIR)$(ERLANG_INSTALL_LIB_DIR_thrift)
 
-clean:
-	rm -f .generated
-	rm -rf test/gen-erl/
-	rm -f $(THRIFT_OMIT_FILE)
+clean-local:
 	$(REBAR) clean
+	$(RM)    .generated
+	$(RM) -r .rebar/
+	$(RM) -r _build/
+	$(RM) -r test/gen-erl/
+	$(RM)    $(THRIFT_OMIT_FILE)
 
 maintainer-clean-local:
-	rm -rf ebin
+	$(RM) -r ebin/
+
+dist-hook:
+	$(RM)    $(distdir)/.generated
+	$(RM) -r $(distdir)/.rebar/
+	$(RM) -r $(distdir)/_build/
+	$(RM) -r $(distdir)/ebin/
+	$(RM) -r $(distdir)/test/gen-erl/
+	$(RM)    $(distdir)/$(THRIFT_OMIT_FILE)
 
 EXTRA_DIST = \
 	include \
@@ -83,7 +84,6 @@ EXTRA_DIST = \
 	coding_standards.md \
 	rebar.config \
 	rebar.config.script \
-	rebar.test.config \
 	test \
 	README.md
 

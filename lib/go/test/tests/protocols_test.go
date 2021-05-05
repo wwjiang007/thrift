@@ -21,8 +21,9 @@ package tests
 
 import (
 	"testing"
-	"thrift"
-	"thrifttest"
+
+	"github.com/apache/thrift/lib/go/test/gopath/src/thrifttest"
+	"github.com/apache/thrift/lib/go/thrift"
 )
 
 func RunSocketTestSuite(t *testing.T, protocolFactory thrift.TProtocolFactory,
@@ -41,7 +42,7 @@ func RunSocketTestSuite(t *testing.T, protocolFactory thrift.TProtocolFactory,
 	go server.Serve()
 
 	// client
-	var transport thrift.TTransport = thrift.NewTSocketFromAddrTimeout(addr, TIMEOUT)
+	var transport thrift.TTransport = thrift.NewTSocketFromAddrTimeout(addr, TIMEOUT, TIMEOUT)
 	transport, err = transportFactory.GetTransport(transport)
 	if err != nil {
 		t.Fatal(err)

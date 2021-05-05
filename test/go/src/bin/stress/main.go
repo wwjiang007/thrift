@@ -20,9 +20,9 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"gen/stress"
 	"log"
 	_ "net/http/pprof"
 	"os"
@@ -30,8 +30,10 @@ import (
 	"runtime/pprof"
 	"sync"
 	"sync/atomic"
-	"thrift"
 	"time"
+
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/apache/thrift/test/go/src/gen/stress"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to this file")
@@ -215,4 +217,39 @@ func client(protocolFactory thrift.TProtocolFactory) {
 	}
 
 	done.Done()
+}
+
+type handler struct{}
+
+func (h *handler) EchoVoid(ctx context.Context) (err error) {
+	atomic.AddInt64(&counter, 1)
+	return nil
+}
+func (h *handler) EchoByte(ctx context.Context, arg int8) (r int8, err error) {
+	atomic.AddInt64(&counter, 1)
+	return arg, nil
+}
+func (h *handler) EchoI32(ctx context.Context, arg int32) (r int32, err error) {
+	atomic.AddInt64(&counter, 1)
+	return arg, nil
+}
+func (h *handler) EchoI64(ctx context.Context, arg int64) (r int64, err error) {
+	atomic.AddInt64(&counter, 1)
+	return arg, nil
+}
+func (h *handler) EchoString(ctx context.Context, arg string) (r string, err error) {
+	atomic.AddInt64(&counter, 1)
+	return arg, nil
+}
+func (h *handler) EchoList(ctx context.Context, arg []int8) (r []int8, err error) {
+	atomic.AddInt64(&counter, 1)
+	return arg, nil
+}
+func (h *handler) EchoSet(ctx context.Context, arg map[int8]struct{}) (r map[int8]struct{}, err error) {
+	atomic.AddInt64(&counter, 1)
+	return arg, nil
+}
+func (h *handler) EchoMap(ctx context.Context, arg map[int8]int8) (r map[int8]int8, err error) {
+	atomic.AddInt64(&counter, 1)
+	return arg, nil
 }

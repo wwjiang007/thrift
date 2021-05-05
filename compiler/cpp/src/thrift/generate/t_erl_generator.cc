@@ -56,7 +56,6 @@ public:
 
     legacy_names_ = false;
     maps_ = false;
-    otp16_ = false;
     export_lines_first_ = true;
     export_types_lines_first_ = true;
 
@@ -65,15 +64,9 @@ public:
         legacy_names_ = true;
       } else if( iter->first.compare("maps") == 0) {
         maps_ = true;
-      } else if( iter->first.compare("otp16") == 0) {
-        otp16_ = true;
       } else {
         throw "unknown option erl:" + iter->first;
       }
-    }
-
-    if (maps_ && otp16_) {
-      throw "argument error: Cannot specify both maps and otp16; maps are not available for Erlang/OTP R16 or older";
     }
 
     out_dir_base_ = "gen-erl";
@@ -83,19 +76,19 @@ public:
    * Init and close methods
    */
 
-  void init_generator();
-  void close_generator();
+  void init_generator() override;
+  void close_generator() override;
 
   /**
    * Program-level generation functions
    */
 
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
-  void generate_const(t_const* tconst);
-  void generate_struct(t_struct* tstruct);
-  void generate_xception(t_struct* txception);
-  void generate_service(t_service* tservice);
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
+  void generate_const(t_const* tconst) override;
+  void generate_struct(t_struct* tstruct) override;
+  void generate_xception(t_struct* txception) override;
+  void generate_service(t_service* tservice) override;
   void generate_member_type(std::ostream& out, t_type* type);
   void generate_member_value(std::ostream& out, t_type* type, t_const_value* value);
 
@@ -184,9 +177,6 @@ private:
   /* if true use maps instead of dicts in generated code */
   bool maps_;
 
-  /* if true use non-namespaced dict and set instead of dict:dict and sets:set */
-  bool otp16_;
-
   /**
    * add function to export list
    */
@@ -220,15 +210,15 @@ private:
   std::ostringstream f_info_;
   std::ostringstream f_info_ext_;
 
-  std::ofstream f_types_file_;
-  std::ofstream f_types_hrl_file_;
+  ofstream_with_content_based_conditional_update f_types_file_;
+  ofstream_with_content_based_conditional_update f_types_hrl_file_;
 
-  std::ofstream f_consts_file_;
-  std::ofstream f_consts_hrl_file_;
+  ofstream_with_content_based_conditional_update f_consts_file_;
+  ofstream_with_content_based_conditional_update f_consts_hrl_file_;
 
   std::ostringstream f_service_;
-  std::ofstream f_service_file_;
-  std::ofstream f_service_hrl_;
+  ofstream_with_content_based_conditional_update f_service_file_;
+  ofstream_with_content_based_conditional_update f_service_hrl_;
 
   /**
    * Metadata containers
@@ -295,7 +285,8 @@ void t_erl_generator::init_generator() {
  * Boilerplate at beginning and end of header files
  */
 void t_erl_generator::hrl_header(ostream& out, string name) {
-  out << "-ifndef(_" << name << "_included)." << endl << "-define(_" << name << "_included, yeah)."
+  out << erl_autogen_comment() << endl
+      << "-ifndef(_" << name << "_included)." << endl << "-define(_" << name << "_included, yeah)."
       << endl;
 }
 
@@ -310,8 +301,8 @@ void t_erl_generator::hrl_footer(ostream& out, string name) {
 string t_erl_generator::render_includes() {
   const vector<t_program*>& includes = program_->get_includes();
   string result = "";
-  for (size_t i = 0; i < includes.size(); ++i) {
-    result += "-include(\"" + make_safe_for_module_name(includes[i]->get_name())
+  for (auto include : includes) {
+    result += "-include(\"" + make_safe_for_module_name(include->get_name())
               + "_types.hrl\").\n";
   }
   if (includes.size() > 0) {
@@ -384,8 +375,37 @@ void t_erl_generator::close_generator() {
   f_consts_hrl_file_.close();
 }
 
+const std::string emit_double_as_string(const double value) {
+  std::stringstream double_output_stream;
+  // sets the maximum precision: http://en.cppreference.com/w/cpp/io/manip/setprecision
+  // sets the output format to fixed: http://en.cppreference.com/w/cpp/io/manip/fixed (not in scientific notation)
+  double_output_stream << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+
+  #ifdef _MSC_VER
+      // strtod is broken in MSVC compilers older than 2015, so std::fixed fails to format a double literal.
+      // more details: https://blogs.msdn.microsoft.com/vcblog/2014/06/18/
+      //               c-runtime-crt-features-fixes-and-breaking-changes-in-visual-studio-14-ctp1/
+      //               and
+      //               http://www.exploringbinary.com/visual-c-plus-plus-strtod-still-broken/
+      #if _MSC_VER >= MSC_2015_VER
+          double_output_stream << std::fixed;
+      #else
+          // note that if this function is called from the erlang generator and the MSVC compiler is older than 2015,
+          // the double literal must be output in the scientific format. There can be some cases where the
+          // mantissa of the output does not have fractionals, which is illegal in Erlang.
+          // example => 10000000000000000.0 being output as 1e+16
+          double_output_stream << std::scientific;
+      #endif
+  #else
+      double_output_stream << std::fixed;
+  #endif
+
+  double_output_stream << value;
+
+  return double_output_stream.str();
+}
+
 void t_erl_generator::generate_type_metadata(std::string function_name, vector<string> names) {
-  vector<string>::iterator s_iter;
   size_t num_structs = names.size();
 
   indent(f_types_file_) << function_name << "() ->\n";
@@ -430,7 +450,7 @@ void t_erl_generator::generate_const_function(t_const* tconst, ostringstream& ex
     exports << const_fun_name << "/1, " << const_fun_name << "/2";
 
     // Emit const function definition.
-    map<t_const_value*, t_const_value*>::const_iterator i, end = value->get_map().end();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator i, end = value->get_map().end();
     // The one-argument form throws an error if the key does not exist in the map.
     for (i = value->get_map().begin(); i != end;) {
       functions << const_fun_name << "(" << render_const_value(ktype, i->first) << ") -> "
@@ -575,9 +595,9 @@ string t_erl_generator::render_const_value(t_type* type, t_const_value* value) {
       break;
     case t_base_type::TYPE_DOUBLE:
       if (value->get_type() == t_const_value::CV_INTEGER) {
-        out << value->get_integer();
+        out << "float(" << value->get_integer() << ")";
       } else {
-        out << value->get_double();
+        out << emit_double_as_string(value->get_double());
       }
       break;
     default:
@@ -590,18 +610,18 @@ string t_erl_generator::render_const_value(t_type* type, t_const_value* value) {
     out << "#" << type_name(type) << "{";
     const vector<t_field*>& fields = ((t_struct*)type)->get_members();
     vector<t_field*>::const_iterator f_iter;
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
 
     bool first = true;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-      t_type* field_type = NULL;
+      t_type* field_type = nullptr;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
         if ((*f_iter)->get_name() == v_iter->first->get_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
-      if (field_type == NULL) {
+      if (field_type == nullptr) {
         throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
       }
 
@@ -626,7 +646,7 @@ string t_erl_generator::render_const_value(t_type* type, t_const_value* value) {
     } else {
       out << "dict:from_list([";
     }
-    map<t_const_value*, t_const_value*>::const_iterator i, end = value->get_map().end();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator i, end = value->get_map().end();
     for (i = value->get_map().begin(); i != end;) {
       out << "{" << render_const_value(ktype, i->first) << ","
           << render_const_value(vtype, i->second) << "}";
@@ -718,17 +738,11 @@ string t_erl_generator::render_member_type(t_field* field) {
   } else if (type->is_map()) {
     if (maps_) {
       return "map()";
-    } else if (otp16_) {
-      return "dict()";
     } else {
       return "dict:dict()";
     }
   } else if (type->is_set()) {
-    if (otp16_) {
-      return "set()";
-    } else {
       return "sets:set()";
-    }
   } else if (type->is_list()) {
     return "list()";
   } else {
@@ -879,7 +893,7 @@ void t_erl_generator::generate_service(t_service* tservice) {
 
   hrl_header(f_service_hrl_, service_name_);
 
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     f_service_hrl_ << "-include(\""
                    << make_safe_for_module_name(tservice->get_extends()->get_name())
                    << "_thrift.hrl\"). % inherit " << endl;
@@ -917,7 +931,6 @@ void t_erl_generator::generate_service(t_service* tservice) {
 void t_erl_generator::generate_service_metadata(t_service* tservice) {
   export_string("function_names", 0);
   vector<t_function*> functions = tservice->get_functions();
-  vector<t_function*>::iterator f_iter;
   size_t num_functions = functions.size();
 
   indent(f_service_) << "function_names() -> " << endl;
@@ -984,7 +997,7 @@ void t_erl_generator::generate_service_interface(t_service* tservice) {
   }
 
   // Inheritance - pass unknown functions to base class
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     indent(f_service_) << "function_info(Function, InfoType) ->" << endl;
     indent_up();
     indent(f_service_) << make_safe_for_module_name(tservice->get_extends()->get_name())
@@ -1248,6 +1261,5 @@ std::string t_erl_generator::type_module(t_type* ttype) {
 THRIFT_REGISTER_GENERATOR(
     erl,
     "Erlang",
-    "    legacynames: Output files retain naming conventions of Thrift 0.9.1 and earlier.\n"
-    "    maps:        Generate maps instead of dicts.\n"
-    "    otp16:       Generate non-namespaced dict and set instead of dict:dict and sets:set.\n")
+    "    legacynames:     Output files retain naming conventions of Thrift 0.9.1 and earlier.\n"
+    "    maps:            Generate maps instead of dicts.\n")

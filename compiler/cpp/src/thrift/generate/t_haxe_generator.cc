@@ -31,7 +31,7 @@
 #include "thrift/generate/t_oop_generator.h"
 
 using std::map;
-using std::ofstream;
+using std::ostream;
 using std::ostringstream;
 using std::string;
 using std::stringstream;
@@ -52,12 +52,11 @@ public:
     (void)option_string;
     std::map<std::string, std::string>::const_iterator iter;
 
-    callbacks_ = false;
     rtti_ = false;
     buildmacro_ = "";
     for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
       if( iter->first.compare("callbacks") == 0) {
-        callbacks_ = true;
+        printf("Hint: The 'callbacks' option is no longer necessary.\n");
       } else if( iter->first.compare("rtti") == 0) {
         rtti_ = true;
       } else if( iter->first.compare("buildmacro") == 0) {
@@ -74,28 +73,28 @@ public:
    * Init and close methods
    */
 
-  void init_generator();
-  void close_generator();
+  void init_generator() override;
+  void close_generator() override;
 
-  void generate_consts(std::vector<t_const*> consts);
+  void generate_consts(std::vector<t_const*> consts) override;
 
   /**
    * Program-level generation functions
    */
 
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
-  void generate_struct(t_struct* tstruct);
-  void generate_xception(t_struct* txception);
-  void generate_service(t_service* tservice);
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
+  void generate_struct(t_struct* tstruct) override;
+  void generate_xception(t_struct* txception) override;
+  void generate_service(t_service* tservice) override;
 
-  void print_const_value(std::ofstream& out,
+  void print_const_value(std::ostream& out,
                          std::string name,
                          t_type* type,
                          t_const_value* value,
                          bool in_static,
                          bool defval = false);
-  std::string render_const_value(ofstream& out,
+  std::string render_const_value(ostream& out,
                                  std::string name,
                                  t_type* type,
                                  t_const_value* value);
@@ -106,18 +105,18 @@ public:
 
   void generate_haxe_struct(t_struct* tstruct, bool is_exception, bool is_result = false);
 
-  void generate_haxe_struct_definition(std::ofstream& out,
+  void generate_haxe_struct_definition(std::ostream& out,
                                        t_struct* tstruct,
                                        bool is_xception = false,
                                        bool is_result = false);
   // removed -- equality,compare_to
-  void generate_haxe_struct_reader(std::ofstream& out, t_struct* tstruct);
-  void generate_haxe_validator(std::ofstream& out, t_struct* tstruct);
-  void generate_haxe_struct_result_writer(std::ofstream& out, t_struct* tstruct);
-  void generate_haxe_struct_writer(std::ofstream& out, t_struct* tstruct);
-  void generate_haxe_struct_tostring(std::ofstream& out, t_struct* tstruct);
-  void generate_haxe_meta_data_map(std::ofstream& out, t_struct* tstruct);
-  void generate_field_value_meta_data(std::ofstream& out, t_type* type);
+  void generate_haxe_struct_reader(std::ostream& out, t_struct* tstruct);
+  void generate_haxe_validator(std::ostream& out, t_struct* tstruct);
+  void generate_haxe_struct_result_writer(std::ostream& out, t_struct* tstruct);
+  void generate_haxe_struct_writer(std::ostream& out, t_struct* tstruct);
+  void generate_haxe_struct_tostring(std::ostream& out, t_struct* tstruct, bool is_override);
+  void generate_haxe_meta_data_map(std::ostream& out, t_struct* tstruct);
+  void generate_field_value_meta_data(std::ostream& out, t_type* type);
   std::string get_haxe_type_string(t_type* type);
   void generate_reflection_setters(std::ostringstream& out,
                                    t_type* type,
@@ -127,52 +126,52 @@ public:
                                    t_type* type,
                                    std::string field_name,
                                    std::string cap_name);
-  void generate_generic_field_getters_setters(std::ofstream& out, t_struct* tstruct);
-  void generate_generic_isset_method(std::ofstream& out, t_struct* tstruct);
-  void generate_property_getters_setters(std::ofstream& out, t_struct* tstruct);
+  void generate_generic_field_getters_setters(std::ostream& out, t_struct* tstruct);
+  void generate_generic_isset_method(std::ostream& out, t_struct* tstruct);
+  void generate_property_getters_setters(std::ostream& out, t_struct* tstruct);
 
   void generate_function_helpers(t_function* tfunction);
   std::string get_cap_name(std::string name);
   std::string generate_isset_check(t_field* field);
   std::string generate_isset_check(std::string field);
-  void generate_isset_set(ofstream& out, t_field* field);
+  void generate_isset_set(ostream& out, t_field* field);
   // removed std::string isset_field_id(t_field* field);
 
-  void generate_service_interface(t_service* tservice);
+  void generate_service_interface(t_service* tservice, bool combined);
   void generate_service_helpers(t_service* tservice);
   void generate_service_client(t_service* tservice);
   void generate_service_server(t_service* tservice);
   void generate_process_function(t_service* tservice, t_function* tfunction);
-  void generate_service_method_signature(t_function* tfunction, bool is_interface);
+  void generate_service_method_signature(t_function* tfunction, bool is_interface, bool combined);
 
   /**
    * Serialization constructs
    */
 
-  void generate_deserialize_field(std::ofstream& out, t_field* tfield, std::string prefix = "");
-  void generate_deserialize_struct(std::ofstream& out, t_struct* tstruct, std::string prefix = "");
-  void generate_deserialize_container(std::ofstream& out, t_type* ttype, std::string prefix = "");
-  void generate_deserialize_set_element(std::ofstream& out, t_set* tset, std::string prefix = "");
-  void generate_deserialize_map_element(std::ofstream& out, t_map* tmap, std::string prefix = "");
-  void generate_deserialize_list_element(std::ofstream& out,
+  void generate_deserialize_field(std::ostream& out, t_field* tfield, std::string prefix = "");
+  void generate_deserialize_struct(std::ostream& out, t_struct* tstruct, std::string prefix = "");
+  void generate_deserialize_container(std::ostream& out, t_type* ttype, std::string prefix = "");
+  void generate_deserialize_set_element(std::ostream& out, t_set* tset, std::string prefix = "");
+  void generate_deserialize_map_element(std::ostream& out, t_map* tmap, std::string prefix = "");
+  void generate_deserialize_list_element(std::ostream& out,
                                          t_list* tlist,
                                          std::string prefix = "");
 
-  void generate_serialize_field(std::ofstream& out, t_field* tfield, std::string prefix = "");
-  void generate_serialize_struct(std::ofstream& out, t_struct* tstruct, std::string prefix = "");
-  void generate_serialize_container(std::ofstream& out, t_type* ttype, std::string prefix = "");
-  void generate_serialize_set_element(std::ofstream& out, t_set* tmap, std::string iter);
-  void generate_serialize_list_element(std::ofstream& out, t_list* tlist, std::string iter);
-  void generate_serialize_map_element(std::ofstream& out,
+  void generate_serialize_field(std::ostream& out, t_field* tfield, std::string prefix = "");
+  void generate_serialize_struct(std::ostream& out, t_struct* tstruct, std::string prefix = "");
+  void generate_serialize_container(std::ostream& out, t_type* ttype, std::string prefix = "");
+  void generate_serialize_set_element(std::ostream& out, t_set* tmap, std::string iter);
+  void generate_serialize_list_element(std::ostream& out, t_list* tlist, std::string iter);
+  void generate_serialize_map_element(std::ostream& out,
                                       t_map* tmap,
                                       std::string iter,
                                       std::string map);
 
-  void generate_haxe_doc(std::ofstream& out, t_doc* tdoc);
-  void generate_haxe_doc(std::ofstream& out, t_function* tdoc);
+  void generate_haxe_doc(std::ostream& out, t_doc* tdoc);
+  void generate_haxe_doc(std::ostream& out, t_function* tdoc);
 
-  void generate_rtti_decoration(std::ofstream& out);
-  void generate_macro_decoration(std::ofstream& out);
+  void generate_rtti_decoration(std::ostream& out);
+  void generate_macro_decoration(std::ostream& out);
 
   /**
    * Helper rendering functions
@@ -186,13 +185,13 @@ public:
   std::string type_name(t_type* ttype, bool in_container = false, bool in_init = false);
   std::string base_type_name(t_base_type* tbase, bool in_container = false);
   std::string declare_field(t_field* tfield, bool init = false);
-  std::string function_signature_callback(t_function* tfunction);
+  std::string function_signature_combined(t_function* tfunction);
   std::string function_signature_normal(t_function* tfunction);
   std::string argument_list(t_struct* tstruct);
   std::string type_to_enum(t_type* ttype);
-  std::string get_enum_class_name(t_type* type);
+  std::string get_enum_class_name(t_type* type) override;
   string generate_service_method_onsuccess(t_function* tfunction, bool as_type, bool omit_name);
-  void generate_service_method_signature_callback(t_function* tfunction, bool is_interface);
+  void generate_service_method_signature_combined(t_function* tfunction, bool is_interface);
   void generate_service_method_signature_normal(t_function* tfunction, bool is_interface);
 
   bool type_can_be_null(t_type* ttype) {
@@ -218,9 +217,9 @@ public:
   }
 
   std::string constant_name(std::string name);
+  std::string make_package_name(std::string value);
 
 private:
-  bool callbacks_;
   bool rtti_;
   string buildmacro_;
 
@@ -229,7 +228,7 @@ private:
    */
 
   std::string package_name_;
-  std::ofstream f_service_;
+  ofstream_with_content_based_conditional_update f_service_;
   std::string package_dir_;
 };
 
@@ -242,19 +241,7 @@ private:
 void t_haxe_generator::init_generator() {
   // Make output directory
   MKDIR(get_out_dir().c_str());
-  package_name_ = program_->get_namespace("haxe");
-
-  // Haxe package names are lowercase
-  if (package_name_.length() > 0) {
-    package_name_[0] = tolower(package_name_[0]);
-    size_t index = package_name_.find('.');
-    while (index != std::string::npos) {
-      if (++index < package_name_.length()) {
-        package_name_[index] = tolower(package_name_[index]);
-      }
-      index = package_name_.find('.', index);
-    }
-  }
+  package_name_ = make_package_name( program_->get_namespace("haxe"));
 
   string dir = package_name_;
   string subdir = get_out_dir();
@@ -270,6 +257,24 @@ void t_haxe_generator::init_generator() {
   }
 
   package_dir_ = subdir;
+}
+
+// Haxe package names start with lowercase letters
+std::string t_haxe_generator::make_package_name(std::string value) {
+  std::string retval(value);
+
+  if (retval.length() > 0) {
+    retval[0] = tolower(retval[0]);
+    size_t index = retval.find('.');
+    while (index != std::string::npos) {
+      if (++index < retval.length()) {
+        retval[index] = tolower(retval[index]);
+      }
+      index = retval.find('.', index);
+    }
+  }
+
+  return retval;
 }
 
 /**
@@ -290,10 +295,17 @@ string t_haxe_generator::haxe_package() {
  * @return List of imports for haxe types that are used in here
  */
 string t_haxe_generator::haxe_type_imports() {
-  return string() + "import org.apache.thrift.helper.*;\n" + "import haxe.io.Bytes;\n"
-         + "import haxe.ds.IntMap;\n" + "import haxe.ds.StringMap;\n"
-         + "import haxe.ds.ObjectMap;\n" + "\n" + "#if flash\n"
-         + "import flash.errors.ArgumentError;\n" + "#end\n" + "\n";
+  return string()
+       + "import org.apache.thrift.helper.*;\n"
+       + "import haxe.io.Bytes;\n"
+       + "import haxe.ds.IntMap;\n"
+       + "import haxe.ds.StringMap;\n"
+       + "import haxe.ds.ObjectMap;\n"
+       + "\n"
+       + "#if flash\n"
+       + "import flash.errors.ArgumentError;\n"
+       + "#end\n"
+       + "\n";
 }
 
 /**
@@ -302,8 +314,11 @@ string t_haxe_generator::haxe_type_imports() {
  * @return List of imports necessary for thrift
  */
 string t_haxe_generator::haxe_thrift_imports() {
-  return string() + "import org.apache.thrift.*;\n" + "import org.apache.thrift.meta_data.*;\n"
-         + "import org.apache.thrift.protocol.*;\n" + "\n";
+  return string()
+       + "import org.apache.thrift.*;\n"
+       + "import org.apache.thrift.meta_data.*;\n"
+       + "import org.apache.thrift.protocol.*;\n"
+       + "\n";
 }
 
 /**
@@ -319,8 +334,8 @@ string t_haxe_generator::haxe_thrift_gen_imports(t_struct* tstruct, string& impo
   // For each type check if it is from a different namespace
   for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
     t_program* program = (*m_iter)->get_type()->get_program();
-    if (program != NULL && program != program_) {
-      string package = program->get_namespace("haxe");
+    if (program != nullptr && program != program_) {
+      string package = make_package_name( program->get_namespace("haxe"));
       if (!package.empty()) {
         if (imports.find(package + "." + (*m_iter)->get_type()->get_name()) == string::npos) {
           imports.append("import " + package + "." + (*m_iter)->get_type()->get_name() + ";\n");
@@ -344,12 +359,11 @@ string t_haxe_generator::haxe_thrift_gen_imports(t_service* tservice) {
   // For each type check if it is from a different namespace
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     t_program* program = (*f_iter)->get_returntype()->get_program();
-    if (program != NULL && program != program_) {
-      string package = program->get_namespace("haxe");
+    if (program != nullptr && program != program_) {
+      string package = make_package_name( program->get_namespace("haxe"));
       if (!package.empty()) {
         if (imports.find(package + "." + (*f_iter)->get_returntype()->get_name()) == string::npos) {
-          imports.append("import " + package + "." + (*f_iter)->get_returntype()->get_name()
-                         + ";\n");
+          imports.append("import " + package + "." + (*f_iter)->get_returntype()->get_name()+ ";\n");
         }
       }
     }
@@ -386,7 +400,7 @@ void t_haxe_generator::generate_typedef(t_typedef* ttypedef) {
 void t_haxe_generator::generate_enum(t_enum* tenum) {
   // Make output file
   string f_enum_name = package_dir_ + "/" + get_cap_name(tenum->get_name()) + ".hx";
-  ofstream f_enum;
+  ofstream_with_content_based_conditional_update f_enum;
   f_enum.open(f_enum_name.c_str());
 
   // Comment and package it
@@ -448,7 +462,7 @@ void t_haxe_generator::generate_consts(std::vector<t_const*> consts) {
   }
 
   string f_consts_name = package_dir_ + "/" + get_cap_name(program_name_) + "Constants.hx";
-  ofstream f_consts;
+  ofstream_with_content_based_conditional_update f_consts;
   f_consts.open(f_consts_name.c_str());
 
   // Print header
@@ -475,7 +489,7 @@ void t_haxe_generator::generate_consts(std::vector<t_const*> consts) {
   f_consts.close();
 }
 
-void t_haxe_generator::print_const_value(std::ofstream& out,
+void t_haxe_generator::print_const_value(std::ostream& out,
                                          string name,
                                          t_type* type,
                                          t_const_value* value,
@@ -503,8 +517,8 @@ void t_haxe_generator::print_const_value(std::ofstream& out,
   } else if (type->is_struct() || type->is_xception()) {
     const vector<t_field*>& fields = ((t_struct*)type)->get_members();
     vector<t_field*>::const_iterator f_iter;
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     out << name << ":" << type_name(type) << " = new " << type_name(type, false, true) << "();"
         << endl;
     if (!in_static) {
@@ -514,13 +528,13 @@ void t_haxe_generator::print_const_value(std::ofstream& out,
       indent_up();
     }
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-      t_type* field_type = NULL;
+      t_type* field_type = nullptr;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
         if ((*f_iter)->get_name() == v_iter->first->get_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
-      if (field_type == NULL) {
+      if (field_type == nullptr) {
         throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
       }
       string val = render_const_value(out, name, field_type, v_iter->second);
@@ -548,8 +562,8 @@ void t_haxe_generator::print_const_value(std::ofstream& out,
     }
     t_type* ktype = ((t_map*)type)->get_key_type();
     t_type* vtype = ((t_map*)type)->get_val_type();
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       string key = render_const_value(out, name, ktype, v_iter->first);
       string val = render_const_value(out, name, vtype, v_iter->second);
@@ -599,7 +613,7 @@ void t_haxe_generator::print_const_value(std::ofstream& out,
   }
 }
 
-string t_haxe_generator::render_const_value(ofstream& out,
+string t_haxe_generator::render_const_value(ostream& out,
                                             string name,
                                             t_type* type,
                                             t_const_value* value) {
@@ -676,7 +690,7 @@ void t_haxe_generator::generate_xception(t_struct* txception) {
 void t_haxe_generator::generate_haxe_struct(t_struct* tstruct, bool is_exception, bool is_result) {
   // Make output file
   string f_struct_name = package_dir_ + "/" + get_cap_name(tstruct->get_name()) + ".hx";
-  ofstream f_struct;
+  ofstream_with_content_based_conditional_update f_struct;
   f_struct.open(f_struct_name.c_str());
 
   f_struct << autogen_comment() << haxe_package() << ";" << endl;
@@ -703,7 +717,7 @@ void t_haxe_generator::generate_haxe_struct(t_struct* tstruct, bool is_exception
  * @param in_class     If inside a class, needs to be static class
  * @param is_result    If this is a result it needs a different writer
  */
-void t_haxe_generator::generate_haxe_struct_definition(ofstream& out,
+void t_haxe_generator::generate_haxe_struct_definition(ostream& out,
                                                        t_struct* tstruct,
                                                        bool is_exception,
                                                        bool is_result) {
@@ -718,10 +732,8 @@ void t_haxe_generator::generate_haxe_struct_definition(ofstream& out,
   if (is_exception) {
     out << "extends TException ";
   }
-  out << "implements TBase ";
-
-  scope_up(out);
-  indent(out) << endl;
+  out << "implements TBase {" << endl << endl;
+  indent_up();
 
   indent(out) << "static var STRUCT_DESC = { new TStruct(\"" << tstruct->get_name() << "\"); };"
               << endl;
@@ -788,7 +800,7 @@ void t_haxe_generator::generate_haxe_struct_definition(ofstream& out,
     indent(out) << "super();" << endl;
   }
   for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-    if ((*m_iter)->get_value() != NULL) {
+    if ((*m_iter)->get_value() != nullptr) {
       indent(out) << "this." << (*m_iter)->get_name() << " = "
                   << (*m_iter)->get_value()->get_integer() << ";" << endl;
     }
@@ -806,7 +818,7 @@ void t_haxe_generator::generate_haxe_struct_definition(ofstream& out,
   } else {
     generate_haxe_struct_writer(out, tstruct);
   }
-  generate_haxe_struct_tostring(out, tstruct);
+  generate_haxe_struct_tostring(out, tstruct, is_exception);
   generate_haxe_validator(out, tstruct);
   scope_down(out);
   out << endl;
@@ -817,7 +829,7 @@ void t_haxe_generator::generate_haxe_struct_definition(ofstream& out,
  *
  * @param tstruct The struct definition
  */
-void t_haxe_generator::generate_haxe_struct_reader(ofstream& out, t_struct* tstruct) {
+void t_haxe_generator::generate_haxe_struct_reader(ostream& out, t_struct* tstruct) {
   out << indent() << "public function read( iprot : TProtocol) : Void {" << endl;
   indent_up();
 
@@ -910,7 +922,7 @@ void t_haxe_generator::generate_haxe_struct_reader(ofstream& out, t_struct* tstr
 
 // generates haxe method to perform various checks
 // (e.g. check that all required fields are set)
-void t_haxe_generator::generate_haxe_validator(ofstream& out, t_struct* tstruct) {
+void t_haxe_generator::generate_haxe_validator(ostream& out, t_struct* tstruct) {
   indent(out) << "public function validate() : Void {" << endl;
   indent_up();
 
@@ -961,7 +973,7 @@ void t_haxe_generator::generate_haxe_validator(ofstream& out, t_struct* tstruct)
  *
  * @param tstruct The struct definition
  */
-void t_haxe_generator::generate_haxe_struct_writer(ofstream& out, t_struct* tstruct) {
+void t_haxe_generator::generate_haxe_struct_writer(ostream& out, t_struct* tstruct) {
   out << indent() << "public function write(oprot:TProtocol) : Void {" << endl;
   indent_up();
 
@@ -1031,7 +1043,7 @@ void t_haxe_generator::generate_haxe_struct_writer(ofstream& out, t_struct* tstr
  *
  * @param tstruct The struct definition
  */
-void t_haxe_generator::generate_haxe_struct_result_writer(ofstream& out, t_struct* tstruct) {
+void t_haxe_generator::generate_haxe_struct_result_writer(ostream& out, t_struct* tstruct) {
   out << indent() << "public function write(oprot:TProtocol) : Void {" << endl;
   indent_up();
 
@@ -1116,7 +1128,7 @@ void t_haxe_generator::generate_reflection_setters(ostringstream& out,
   indent_down();
 }
 
-void t_haxe_generator::generate_generic_field_getters_setters(std::ofstream& out,
+void t_haxe_generator::generate_generic_field_getters_setters(std::ostream& out,
                                                               t_struct* tstruct) {
 
   std::ostringstream getter_stream;
@@ -1174,7 +1186,7 @@ void t_haxe_generator::generate_generic_field_getters_setters(std::ofstream& out
 }
 
 // Creates a generic isSet method that takes the field number as argument
-void t_haxe_generator::generate_generic_isset_method(std::ofstream& out, t_struct* tstruct) {
+void t_haxe_generator::generate_generic_isset_method(std::ostream& out, t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
@@ -1210,7 +1222,7 @@ void t_haxe_generator::generate_generic_isset_method(std::ofstream& out, t_struc
  *
  * @param tstruct The struct definition
  */
-void t_haxe_generator::generate_property_getters_setters(ofstream& out, t_struct* tstruct) {
+void t_haxe_generator::generate_property_getters_setters(ostream& out, t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
@@ -1272,9 +1284,12 @@ void t_haxe_generator::generate_property_getters_setters(ofstream& out, t_struct
  *
  * @param tstruct The struct definition
  */
-void t_haxe_generator::generate_haxe_struct_tostring(ofstream& out, t_struct* tstruct) {
-  out << indent() << "public "
-      << "function toString() : String {" << endl;
+void t_haxe_generator::generate_haxe_struct_tostring(ostream& out, t_struct* tstruct, bool is_override) {
+  out << indent() << "public ";
+  if( is_override) {
+    out << "override ";
+  }
+  out << "function toString() : String {" << endl;
   indent_up();
 
   out << indent() << "var ret : String = \"" << tstruct->get_name() << "(\";" << endl;
@@ -1346,7 +1361,7 @@ void t_haxe_generator::generate_haxe_struct_tostring(ofstream& out, t_struct* ts
  *
  * @param tstruct The struct definition
  */
-void t_haxe_generator::generate_haxe_meta_data_map(ofstream& out, t_struct* tstruct) {
+void t_haxe_generator::generate_haxe_meta_data_map(ostream& out, t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
@@ -1399,7 +1414,7 @@ std::string t_haxe_generator::get_haxe_type_string(t_type* type) {
   } else if (type->is_base_type()) {
     switch (((t_base_type*)type)->get_base()) {
     case t_base_type::TYPE_VOID:
-      return "TType.VOID";
+      return "TType.VOID_";
       break;
     case t_base_type::TYPE_STRING:
       return "TType.STRING";
@@ -1434,7 +1449,7 @@ std::string t_haxe_generator::get_haxe_type_string(t_type* type) {
   }
 }
 
-void t_haxe_generator::generate_field_value_meta_data(std::ofstream& out, t_type* type) {
+void t_haxe_generator::generate_field_value_meta_data(std::ostream& out, t_type* type) {
   out << endl;
   indent_up();
   indent_up();
@@ -1474,8 +1489,8 @@ void t_haxe_generator::generate_field_value_meta_data(std::ofstream& out, t_type
  * @param tservice The service definition
  */
 void t_haxe_generator::generate_service(t_service* tservice) {
-  // Make interface file
-  string f_service_name = package_dir_ + "/" + get_cap_name(service_name_) + ".hx";
+  // Make service interface file with only "normal" calls
+  string f_service_name = package_dir_ + "/" + get_cap_name(service_name_) + "_service.hx";
   f_service_.open(f_service_name.c_str());
 
   f_service_ << autogen_comment() << haxe_package() << ";" << endl;
@@ -1483,9 +1498,31 @@ void t_haxe_generator::generate_service(t_service* tservice) {
   f_service_ << endl << haxe_type_imports() << haxe_thrift_imports()
              << haxe_thrift_gen_imports(tservice);
 
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     t_type* parent = tservice->get_extends();
-    string parent_namespace = parent->get_program()->get_namespace("haxe");
+    string parent_namespace = make_package_name( parent->get_program()->get_namespace("haxe"));
+    if (!parent_namespace.empty() && parent_namespace != package_name_) {
+      f_service_ << "import " << type_name(parent) << "_service;" << endl;
+    }
+  }
+
+  f_service_ << endl;
+
+  generate_service_interface(tservice,false);
+  f_service_.close();
+
+  // Client interface file with dual suppport ("normal" and "callback" style)
+  f_service_name = package_dir_ + "/" + get_cap_name(service_name_) + ".hx";
+  f_service_.open(f_service_name.c_str());
+
+  f_service_ << autogen_comment() << haxe_package() << ";" << endl;
+
+  f_service_ << endl << haxe_type_imports() << haxe_thrift_imports()
+             << haxe_thrift_gen_imports(tservice);
+
+  if (tservice->get_extends() != nullptr) {
+    t_type* parent = tservice->get_extends();
+    string parent_namespace = make_package_name( parent->get_program()->get_namespace("haxe"));
     if (!parent_namespace.empty() && parent_namespace != package_name_) {
       f_service_ << "import " << type_name(parent) << ";" << endl;
     }
@@ -1493,8 +1530,7 @@ void t_haxe_generator::generate_service(t_service* tservice) {
 
   f_service_ << endl;
 
-  generate_service_interface(tservice);
-
+  generate_service_interface(tservice,true);
   f_service_.close();
 
   // Now make the implementation/client file
@@ -1504,9 +1540,9 @@ void t_haxe_generator::generate_service(t_service* tservice) {
   f_service_ << autogen_comment() << haxe_package() << ";" << endl << endl << haxe_type_imports()
              << haxe_thrift_imports() << haxe_thrift_gen_imports(tservice) << endl;
 
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     t_type* parent = tservice->get_extends();
-    string parent_namespace = parent->get_program()->get_namespace("haxe");
+    string parent_namespace = make_package_name( parent->get_program()->get_namespace("haxe"));
     if (!parent_namespace.empty() && parent_namespace != package_name_) {
       f_service_ << "import " << type_name(parent) << "Impl;" << endl;
     }
@@ -1515,7 +1551,6 @@ void t_haxe_generator::generate_service(t_service* tservice) {
   f_service_ << endl;
 
   generate_service_client(tservice);
-
   f_service_.close();
 
   // Now make the helper class files
@@ -1525,18 +1560,20 @@ void t_haxe_generator::generate_service(t_service* tservice) {
   f_service_name = package_dir_ + "/" + get_cap_name(service_name_) + "Processor.hx";
   f_service_.open(f_service_name.c_str());
 
-  f_service_ << autogen_comment() << haxe_package() << ";" << endl << endl << haxe_type_imports()
-             << haxe_thrift_imports() << haxe_thrift_gen_imports(tservice) << endl;
+  f_service_ << autogen_comment() << haxe_package() << ";" << endl 
+             << endl 
+             << haxe_type_imports()
+             << haxe_thrift_imports() 
+             << haxe_thrift_gen_imports(tservice) 
+             << endl;
 
   if (!package_name_.empty()) {
     f_service_ << "import " << package_name_ << ".*;" << endl;
-    f_service_ << "import " << package_name_ << "." << get_cap_name(service_name_).c_str()
-               << "Impl;" << endl;
+    f_service_ << "import " << package_name_ << "." << get_cap_name(service_name_).c_str() << "Impl;" << endl;
     f_service_ << endl;
   }
 
   generate_service_server(tservice);
-
   f_service_.close();
 }
 
@@ -1580,9 +1617,9 @@ string t_haxe_generator::generate_service_method_onsuccess(t_function* tfunction
  *
  * @param tfunction The service function to generate code for.
  */
-void t_haxe_generator::generate_service_method_signature(t_function* tfunction, bool is_interface) {
-  if (callbacks_) {
-    generate_service_method_signature_callback(tfunction, is_interface);
+void t_haxe_generator::generate_service_method_signature(t_function* tfunction, bool is_interface, bool combined) {
+  if( combined) {
+    generate_service_method_signature_combined(tfunction, is_interface);
   } else {
     generate_service_method_signature_normal(tfunction, is_interface);
   }
@@ -1607,7 +1644,7 @@ void t_haxe_generator::generate_service_method_signature_normal(t_function* tfun
  *
  * @param tfunction The service function to generate code for.
  */
-void t_haxe_generator::generate_service_method_signature_callback(t_function* tfunction,
+void t_haxe_generator::generate_service_method_signature_combined(t_function* tfunction,
                                                                   bool is_interface) {
   if (!tfunction->is_oneway()) {
     std::string on_success_impl = generate_service_method_onsuccess(tfunction, false, false);
@@ -1616,9 +1653,9 @@ void t_haxe_generator::generate_service_method_signature_callback(t_function* tf
   }
 
   if (is_interface) {
-    indent(f_service_) << function_signature_callback(tfunction) << ";" << endl << endl;
+    indent(f_service_) << function_signature_combined(tfunction) << ";" << endl << endl;
   } else {
-    indent(f_service_) << "public " << function_signature_callback(tfunction) << " {" << endl;
+    indent(f_service_) << "public " << function_signature_combined(tfunction) << " {" << endl;
   }
 }
 
@@ -1627,24 +1664,26 @@ void t_haxe_generator::generate_service_method_signature_callback(t_function* tf
  *
  * @param tservice The service to generate a header definition for
  */
-void t_haxe_generator::generate_service_interface(t_service* tservice) {
+void t_haxe_generator::generate_service_interface(t_service* tservice, bool combined) {
+  string cbk_postfix = combined ? "" : "_service";
+
   string extends_iface = "";
-  if (tservice->get_extends() != NULL) {
-    extends_iface = " extends " + tservice->get_extends()->get_name();
+  if (tservice->get_extends() != nullptr) {
+    extends_iface = " extends " + tservice->get_extends()->get_name() + cbk_postfix;
   }
 
-  generate_haxe_doc(f_service_, tservice);
-  // generate_rtti_decoration(f_service_); - not yet, because of
-  // https://github.com/HaxeFoundation/haxe/issues/3626
-  generate_macro_decoration(f_service_);
-  f_service_ << indent() << "interface " << get_cap_name(service_name_) << extends_iface << " {"
-             << endl << endl;
-  indent_up();
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
+
+  generate_haxe_doc(f_service_, tservice);
+  generate_rtti_decoration(f_service_);
+  generate_macro_decoration(f_service_);
+  f_service_ << indent() << "interface " << get_cap_name(service_name_) << cbk_postfix << extends_iface << " {"
+             << endl << endl;
+  indent_up();
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     generate_haxe_doc(f_service_, *f_iter);
-    generate_service_method_signature(*f_iter, true);
+    generate_service_method_signature(*f_iter, true, combined);
   }
   indent_down();
   f_service_ << indent() << "}" << endl << endl;
@@ -1674,7 +1713,7 @@ void t_haxe_generator::generate_service_helpers(t_service* tservice) {
 void t_haxe_generator::generate_service_client(t_service* tservice) {
   string extends = "";
   string extends_client = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     extends = get_cap_name(tservice->get_extends()->get_name());
     extends_client = " extends " + extends + "Impl";
   }
@@ -1729,7 +1768,7 @@ void t_haxe_generator::generate_service_client(t_service* tservice) {
     string funname = (*f_iter)->get_name();
 
     // Open function
-    generate_service_method_signature(*f_iter, false);
+    generate_service_method_signature(*f_iter, false, true);
 
     indent_up();
 
@@ -1741,21 +1780,23 @@ void t_haxe_generator::generate_service_client(t_service* tservice) {
     const vector<t_field*>& fields = arg_struct->get_members();
 
     // Serialize the request
+    string args = tmp("args");
     string calltype = (*f_iter)->is_oneway() ? "ONEWAY" : "CALL";
     f_service_ << indent() << "oprot_.writeMessageBegin(new TMessage(\"" << funname
                << "\", TMessageType." << calltype << ", seqid_));" << endl << indent()
-               << "var args : " << argsname << " = new " << argsname << "();" << endl;
+               << "var " << args << " : " << argsname << " = new " << argsname << "();" << endl;
 
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
-      f_service_ << indent() << "args." << (*fld_iter)->get_name() << " = "
+      f_service_ << indent() << args << "." << (*fld_iter)->get_name() << " = "
                  << (*fld_iter)->get_name() << ";" << endl;
     }
 
-    f_service_ << indent() << "args.write(oprot_);" << endl << indent()
+    f_service_ << indent() << args << ".write(oprot_);" << endl << indent()
                << "oprot_.writeMessageEnd();" << endl;
 
+    string retval = tmp("retval");
     if (!((*f_iter)->is_oneway() || (*f_iter)->get_returntype()->is_void())) {
-      f_service_ << indent() << "var retval : " << type_name((*f_iter)->get_returntype()) << ";"
+      f_service_ << indent() << "var " << retval << " : " << type_name((*f_iter)->get_returntype()) << ";"
                  << endl;
     }
 
@@ -1764,109 +1805,108 @@ void t_haxe_generator::generate_service_client(t_service* tservice) {
     } else {
       indent(f_service_) << "oprot_.getTransport().flush(function(error:Dynamic) : Void {" << endl;
       indent_up();
-      if (callbacks_) {
-        indent(f_service_) << "try {" << endl;
-        indent_up();
-      }
+      indent(f_service_) << "try {" << endl;
+      indent_up();
+      string appex = tmp("appex");
+      indent(f_service_) << "var " << appex << " : TApplicationException;" << endl;
       string resultname = get_cap_name((*f_iter)->get_name() + "_result");
       indent(f_service_) << "if (error != null) {" << endl;
       indent_up();
-      if (callbacks_) {
-        indent(f_service_) << "if (onError != null) onError(error);" << endl;
-        indent(f_service_) << "return;" << endl;
-      } else {
-        indent(f_service_) << "throw error;" << endl;
-      }
-      indent_down();
-      indent(f_service_) << "}" << endl;
-      indent(f_service_) << "var msg : TMessage = iprot_.readMessageBegin();" << endl;
-      indent(f_service_) << "if (msg.type == TMessageType.EXCEPTION) {" << endl;
+      indent(f_service_) << "if (onError == null)" << endl;
       indent_up();
-      indent(f_service_) << "var x = TApplicationException.read(iprot_);" << endl;
-      indent(f_service_) << "iprot_.readMessageEnd();" << endl;
-      if (callbacks_) {
-        indent(f_service_) << "if (onError != null) onError(x);" << endl;
-        indent(f_service_) << "return;" << endl;
-      } else {
-        indent(f_service_) << "throw x;" << endl;
-      }
+      indent(f_service_) << "throw error;" << endl;
       indent_down();
-      indent(f_service_) << "}" << endl;
-      indent(f_service_) << "var result : " << resultname << " = new " << resultname << "();"
-                         << endl;
-      indent(f_service_) << "result.read(iprot_);" << endl;
+      indent(f_service_) << "onError(error);" << endl;
+      indent(f_service_) << "return;" << endl;
+      indent_down();
+      indent(f_service_) << "}" << endl << endl;
+      string msg = tmp("msg");
+      indent(f_service_) << "var " << msg << " : TMessage = iprot_.readMessageBegin();" << endl;
+      indent(f_service_) << "if (" << msg << ".type == TMessageType.EXCEPTION) {" << endl;
+      indent_up();
+      indent(f_service_) << appex << " = TApplicationException.read(iprot_);" << endl;
+      indent(f_service_) << "iprot_.readMessageEnd();" << endl;
+      indent(f_service_) << "if (onError == null)" << endl;
+      indent_up();
+      indent(f_service_) << "throw " << appex << ";" << endl;
+      indent_down();
+      indent(f_service_) << "onError(" << appex << ");" << endl;
+      indent(f_service_) << "return;" << endl;
+      indent_down();
+      indent(f_service_) << "}" << endl << endl;
+      string result = tmp("result");
+      indent(f_service_) << "var " << result << " : " << resultname << " = new " << resultname << "();" << endl;
+      indent(f_service_) << "" << result << ".read(iprot_);" << endl;
       indent(f_service_) << "iprot_.readMessageEnd();" << endl;
 
       // Careful, only return _result if not a void function
       if (!(*f_iter)->get_returntype()->is_void()) {
-        indent(f_service_) << "if (result." << generate_isset_check("success") << ") {" << endl;
+        indent(f_service_) << "if (" << result << "." << generate_isset_check("success") << ") {" << endl;
         indent_up();
-        if (callbacks_) {
-          indent(f_service_) << "if (onSuccess != null) onSuccess(result.success);" << endl;
-          indent(f_service_) << "return;" << endl;
-        } else {
-          indent(f_service_) << "retval = result.success;" << endl;
-          indent(f_service_) << "return;" << endl;
-        }
+        indent(f_service_) << "if (onSuccess != null)" << endl;
+        indent_up();
+        indent(f_service_) << "onSuccess(" << result << ".success);" << endl;
         indent_down();
-        indent(f_service_) << "}" << endl;
+        indent(f_service_) << retval << " = " << result << ".success;" << endl;
+        indent(f_service_) << "return;" << endl;
+        indent_down();
+        indent(f_service_) << "}" << endl << endl;
       }
 
       t_struct* xs = (*f_iter)->get_xceptions();
       const std::vector<t_field*>& xceptions = xs->get_members();
       vector<t_field*>::const_iterator x_iter;
       for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-        indent(f_service_) << "if (result." << (*x_iter)->get_name() << " != null) {" << endl;
+        indent(f_service_) << "if (" << result << "." << (*x_iter)->get_name() << " != null) {" << endl;
         indent_up();
-        if (callbacks_) {
-          indent(f_service_) << "if (onError != null) onError(result." << (*x_iter)->get_name()
-                             << ");" << endl;
-          indent(f_service_) << "return;" << endl;
-        } else {
-          indent(f_service_) << "throw result." << (*x_iter)->get_name() << ";" << endl;
-        }
+        indent(f_service_) << "if (onError == null)" << endl;
+        indent_up();
+        indent(f_service_) << "throw " << result << "." << (*x_iter)->get_name() << ";" << endl;
         indent_down();
-        indent(f_service_) << "}" << endl;
+        indent(f_service_) << "onError(" << result << "." << (*x_iter)->get_name() << ");" << endl;
+        indent(f_service_) << "return;" << endl;
+        indent_down();
+        indent(f_service_) << "}" << endl << endl;
       }
 
       // If you get here it's an exception, unless a void function
       if ((*f_iter)->get_returntype()->is_void()) {
-        if (callbacks_) {
-          indent(f_service_) << "if (onSuccess != null) onSuccess();" << endl;
-        }
+        indent(f_service_) << "if (onSuccess != null)" << endl;
+        indent_up();
+        indent(f_service_) << "onSuccess();" << endl;
+        indent_down();
         indent(f_service_) << "return;" << endl;
       } else {
-        if (callbacks_) {
-          indent(f_service_) << "if (onError != null)" << endl;
-          indent_up();
-          indent(f_service_)
-              << "onError( new TApplicationException(TApplicationException.MISSING_RESULT," << endl;
-          indent(f_service_) << "                               \"" << (*f_iter)->get_name()
-                             << " failed: unknown result\"));" << endl;
-          indent_down();
-        } else {
-          indent(f_service_)
-              << "throw new TApplicationException(TApplicationException.MISSING_RESULT," << endl;
-          indent(f_service_) << "                            \"" << (*f_iter)->get_name()
-                             << " failed: unknown result\");" << endl;
-        }
-      }
-
-      if (callbacks_) {
-        indent_down();
-        indent(f_service_) << "} catch( e : TException) {" << endl;
+        indent(f_service_) << appex << " = new TApplicationException("
+                           << "TApplicationException.MISSING_RESULT,"
+                           << "\"" << (*f_iter)->get_name() << " failed: unknown result\");" << endl;
+        indent(f_service_) << "if (onError == null)" << endl;
         indent_up();
-        indent(f_service_) << "if (onError != null) onError(e);" << endl;
+        indent(f_service_) << "throw " << appex << ";" << endl;
         indent_down();
-        indent(f_service_) << "}" << endl;
+        indent(f_service_) << "onError(" << appex << ");" << endl;
+        indent(f_service_) << "return;" << endl;
       }
 
       indent_down();
-      indent(f_service_) << "});" << endl;
+      indent(f_service_) << endl;
+      indent(f_service_) << "} catch( e : TException) {" << endl;
+      indent_up();
+      indent(f_service_) << "if (onError == null)" << endl;
+      indent_up();
+      indent(f_service_) << "throw e;" << endl;
+      indent_down();
+      indent(f_service_) << "onError(e);" << endl;
+      indent(f_service_) << "return;" << endl;
+      indent_down();
+      indent(f_service_) << "}" << endl;
+
+      indent_down();
+      indent(f_service_) << "});" << endl << endl;
     }
 
     if (!((*f_iter)->is_oneway() || (*f_iter)->get_returntype()->is_void())) {
-      f_service_ << indent() << "return retval;" << endl;
+      f_service_ << indent() << "return " << retval << ";" << endl;
     }
 
     // Close function
@@ -1891,7 +1931,7 @@ void t_haxe_generator::generate_service_server(t_service* tservice) {
   // Extends stuff
   string extends = "";
   string extends_processor = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     extends = get_cap_name(type_name(tservice->get_extends()));
     extends_processor = " extends " + extends + "Processor";
   }
@@ -1904,7 +1944,7 @@ void t_haxe_generator::generate_service_server(t_service* tservice) {
   indent_up();
 
   f_service_ << indent() << "private var " << get_cap_name(service_name_)
-             << "_iface_ : " << get_cap_name(service_name_) << ";" << endl;
+             << "_iface_ : " << get_cap_name(service_name_) << "_service;" << endl;
 
   if (extends.empty()) {
     f_service_ << indent()
@@ -1914,7 +1954,7 @@ void t_haxe_generator::generate_service_server(t_service* tservice) {
 
   f_service_ << endl;
 
-  indent(f_service_) << "public function new( iface : " << get_cap_name(service_name_) << ")"
+  indent(f_service_) << "public function new( iface : " << get_cap_name(service_name_) << "_service)"
                      << endl;
   scope_up(f_service_);
   if (!extends.empty()) {
@@ -1932,7 +1972,7 @@ void t_haxe_generator::generate_service_server(t_service* tservice) {
 
   // Generate the server implementation
   string override = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     override = "override ";
   }
   indent(f_service_) << override
@@ -1943,20 +1983,20 @@ void t_haxe_generator::generate_service_server(t_service* tservice) {
   f_service_ << indent() << "var msg : TMessage = iprot.readMessageBegin();" << endl;
 
   // TODO(mcslee): validate message, was the seqid etc. legit?
-  // AS- If all method is oneway:
-  // do you have an oprot?
-  // do you you need nullcheck?
+
   f_service_
-      << indent() << "var fn  = PROCESS_MAP.get(msg.name);" << endl << indent()
-      << "if (fn == null) {" << endl << indent() << "  TProtocolUtil.skip(iprot, TType.STRUCT);"
-      << endl << indent() << "  iprot.readMessageEnd();" << endl << indent()
-      << "  var x = new TApplicationException(TApplicationException.UNKNOWN_METHOD, \"Invalid "
-         "method name: '\"+msg.name+\"'\");" << endl << indent()
-      << "  oprot.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));"
-      << endl << indent() << "  x.write(oprot);" << endl << indent() << "  oprot.writeMessageEnd();"
-      << endl << indent() << "  oprot.getTransport().flush();" << endl << indent()
-      << "  return true;" << endl << indent() << "}" << endl << indent()
-      << "fn( msg.seqid, iprot, oprot);" << endl;
+      << indent() << "var fn  = PROCESS_MAP.get(msg.name);" << endl
+      << indent() << "if (fn == null) {" << endl
+      << indent() << "  TProtocolUtil.skip(iprot, TType.STRUCT);" << endl
+      << indent() << "  iprot.readMessageEnd();" << endl
+      << indent() << "  var appex = new TApplicationException(TApplicationException.UNKNOWN_METHOD, "
+                  << "\"Invalid method name: '\"+msg.name+\"'\");" << endl
+      << indent() << "  oprot.writeMessageBegin(new TMessage(msg.name, TMessageType.EXCEPTION, msg.seqid));" << endl
+      << indent() << "  appex.write(oprot);" << endl << indent() << "  oprot.writeMessageEnd();" << endl
+      << indent() << "  oprot.getTransport().flush();" << endl
+      << indent() << "  return true;" << endl << indent() << "}" << endl
+      << indent() << "fn( msg.seqid, iprot, oprot);" << endl
+      ;
 
   f_service_ << indent() << "return true;" << endl;
 
@@ -2029,84 +2069,36 @@ void t_haxe_generator::generate_process_function(t_service* tservice, t_function
 
   // Declare result for non oneway function
   if (!tfunction->is_oneway()) {
-    f_service_ << indent() << "var result : " << resultname << " = new " << resultname << "();"
-               << endl;
+    f_service_ << indent() << "var result : " << resultname << " = new " << resultname << "();" << endl;
   }
 
   // Try block for any  function to catch (defined or undefined) exceptions
   f_service_ << indent() << "try {" << endl;
   indent_up();
 
-  if (callbacks_) {
-    // callback function style onError/onSuccess
 
-    // Generate the function call
-    t_struct* arg_struct = tfunction->get_arglist();
-    const std::vector<t_field*>& fields = arg_struct->get_members();
-    vector<t_field*>::const_iterator f_iter;
+  // normal function():result style
 
-    f_service_ << indent();
-    f_service_ << get_cap_name(service_name_) << "_iface_." << tfunction->get_name() << "(";
-    bool first = true;
-    for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-      if (first) {
-        first = false;
-      } else {
-        f_service_ << ", ";
-      }
-      f_service_ << "args." << (*f_iter)->get_name();
-    }
+  // Generate the function call
+  t_struct* arg_struct = tfunction->get_arglist();
+  const std::vector<t_field*>& fields = arg_struct->get_members();
+  vector<t_field*>::const_iterator f_iter;
 
-    if (tfunction->is_oneway()) {
-      f_service_ << ");" << endl;
-    } else {
-      if (first) {
-        first = false;
-      } else {
-        f_service_ << ", ";
-      }
-      string on_success = generate_service_method_onsuccess(tfunction, false, true);
-      indent_up();
-      f_service_ << endl;
-      indent(f_service_) << "null,  // errors are thrown by the handler" << endl;
-      if (tfunction->get_returntype()->is_void()) {
-        indent(f_service_) << "null); // no retval" << endl;
-      } else {
-        indent(f_service_) << "function" << on_success.c_str() << " {" << endl;
-        if (!tfunction->get_returntype()->is_void()) {
-          indent_up();
-          indent(f_service_) << "result.success = retval;" << endl;
-          indent_down();
-        }
-        indent(f_service_) << "});" << endl;
-      }
-      indent_down();
-    }
-
-  } else {
-    // normal function():result style
-
-    // Generate the function call
-    t_struct* arg_struct = tfunction->get_arglist();
-    const std::vector<t_field*>& fields = arg_struct->get_members();
-    vector<t_field*>::const_iterator f_iter;
-
-    f_service_ << indent();
-    if (!(tfunction->is_oneway() || tfunction->get_returntype()->is_void())) {
-      f_service_ << "result.success = ";
-    }
-    f_service_ << get_cap_name(service_name_) << "_iface_." << tfunction->get_name() << "(";
-    bool first = true;
-    for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-      if (first) {
-        first = false;
-      } else {
-        f_service_ << ", ";
-      }
-      f_service_ << "args." << (*f_iter)->get_name();
-    }
-    f_service_ << ");" << endl;
+  f_service_ << indent();
+  if (!(tfunction->is_oneway() || tfunction->get_returntype()->is_void())) {
+    f_service_ << "result.success = ";
   }
+  f_service_ << get_cap_name(service_name_) << "_iface_." << tfunction->get_name() << "(";
+  bool first = true;
+  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    if (first) {
+      first = false;
+    } else {
+      f_service_ << ", ";
+    }
+    f_service_ << "args." << (*f_iter)->get_name();
+  }
+  f_service_ << ");" << endl;
 
   indent_down();
   f_service_ << indent() << "}";
@@ -2128,16 +2120,16 @@ void t_haxe_generator::generate_process_function(t_service* tservice, t_function
   }
 
   // always catch all exceptions to prevent from service denial
+  string appex = tmp("appex");
   f_service_ << " catch (th : Dynamic) {" << endl;
   indent_up();
-  indent(f_service_) << "trace(\"Internal error processing " << tfunction->get_name() << "\", th);"
-                     << endl;
+  indent(f_service_) << "trace(\"Internal error processing " << tfunction->get_name() << "\", th);" << endl;
   if (!tfunction->is_oneway()) {
-    indent(f_service_) << "var x = new TApplicationException(TApplicationException.INTERNAL_ERROR, "
+    indent(f_service_) << "var appex = new TApplicationException(TApplicationException.INTERNAL_ERROR, "
                           "\"Internal error processing " << tfunction->get_name() << "\");" << endl;
     indent(f_service_) << "oprot.writeMessageBegin(new TMessage(\"" << tfunction->get_name()
                        << "\", TMessageType.EXCEPTION, seqid));" << endl;
-    indent(f_service_) << "x.write(oprot);" << endl;
+    indent(f_service_) << "appex.write(oprot);" << endl;
     indent(f_service_) << "oprot.writeMessageEnd();" << endl;
     indent(f_service_) << "oprot.getTransport().flush();" << endl;
   }
@@ -2176,7 +2168,7 @@ void t_haxe_generator::generate_process_function(t_service* tservice, t_function
  * @param tfield The field
  * @param prefix The variable name or container for this field
  */
-void t_haxe_generator::generate_deserialize_field(ofstream& out, t_field* tfield, string prefix) {
+void t_haxe_generator::generate_deserialize_field(ostream& out, t_field* tfield, string prefix) {
   t_type* type = get_true_type(tfield->get_type());
 
   if (type->is_void()) {
@@ -2241,7 +2233,7 @@ void t_haxe_generator::generate_deserialize_field(ofstream& out, t_field* tfield
 /**
  * Generates an unserializer for a struct, invokes read()
  */
-void t_haxe_generator::generate_deserialize_struct(ofstream& out,
+void t_haxe_generator::generate_deserialize_struct(ostream& out,
                                                    t_struct* tstruct,
                                                    string prefix) {
   out << indent() << prefix << " = new " << get_cap_name(type_name(tstruct)) << "();" << endl
@@ -2251,7 +2243,7 @@ void t_haxe_generator::generate_deserialize_struct(ofstream& out,
 /**
  * Deserializes a container by reading its size and then iterating
  */
-void t_haxe_generator::generate_deserialize_container(ofstream& out, t_type* ttype, string prefix) {
+void t_haxe_generator::generate_deserialize_container(ostream& out, t_type* ttype, string prefix) {
   scope_up(out);
 
   string obj;
@@ -2309,7 +2301,7 @@ void t_haxe_generator::generate_deserialize_container(ofstream& out, t_type* tty
 /**
  * Generates code to deserialize a map
  */
-void t_haxe_generator::generate_deserialize_map_element(ofstream& out, t_map* tmap, string prefix) {
+void t_haxe_generator::generate_deserialize_map_element(ostream& out, t_map* tmap, string prefix) {
   string key = tmp("_key");
   string val = tmp("_val");
   t_field fkey(tmap->get_key_type(), key);
@@ -2327,7 +2319,7 @@ void t_haxe_generator::generate_deserialize_map_element(ofstream& out, t_map* tm
 /**
  * Deserializes a set element
  */
-void t_haxe_generator::generate_deserialize_set_element(ofstream& out, t_set* tset, string prefix) {
+void t_haxe_generator::generate_deserialize_set_element(ostream& out, t_set* tset, string prefix) {
   string elem = tmp("_elem");
   t_field felem(tset->get_elem_type(), elem);
 
@@ -2341,7 +2333,7 @@ void t_haxe_generator::generate_deserialize_set_element(ofstream& out, t_set* ts
 /**
  * Deserializes a list element
  */
-void t_haxe_generator::generate_deserialize_list_element(ofstream& out,
+void t_haxe_generator::generate_deserialize_list_element(ostream& out,
                                                          t_list* tlist,
                                                          string prefix) {
   string elem = tmp("_elem");
@@ -2360,7 +2352,7 @@ void t_haxe_generator::generate_deserialize_list_element(ofstream& out,
  * @param tfield The field to serialize
  * @param prefix Name to prepend to field name
  */
-void t_haxe_generator::generate_serialize_field(ofstream& out, t_field* tfield, string prefix) {
+void t_haxe_generator::generate_serialize_field(ostream& out, t_field* tfield, string prefix) {
   t_type* type = get_true_type(tfield->get_type());
 
   // Do nothing for void types
@@ -2429,7 +2421,7 @@ void t_haxe_generator::generate_serialize_field(ofstream& out, t_field* tfield, 
  * @param tstruct The struct to serialize
  * @param prefix  String prefix to attach to all fields
  */
-void t_haxe_generator::generate_serialize_struct(ofstream& out, t_struct* tstruct, string prefix) {
+void t_haxe_generator::generate_serialize_struct(ostream& out, t_struct* tstruct, string prefix) {
   (void)tstruct;
   out << indent() << prefix << ".write(oprot);" << endl;
 }
@@ -2440,7 +2432,7 @@ void t_haxe_generator::generate_serialize_struct(ofstream& out, t_struct* tstruc
  * @param ttype  The type of container
  * @param prefix String prefix for fields
  */
-void t_haxe_generator::generate_serialize_container(ofstream& out, t_type* ttype, string prefix) {
+void t_haxe_generator::generate_serialize_container(ostream& out, t_type* ttype, string prefix) {
   scope_up(out);
 
   if (ttype->is_map()) {
@@ -2498,7 +2490,7 @@ void t_haxe_generator::generate_serialize_container(ofstream& out, t_type* ttype
 /**
  * Serializes the members of a map.
  */
-void t_haxe_generator::generate_serialize_map_element(ofstream& out,
+void t_haxe_generator::generate_serialize_map_element(ostream& out,
                                                       t_map* tmap,
                                                       string iter,
                                                       string map) {
@@ -2511,7 +2503,7 @@ void t_haxe_generator::generate_serialize_map_element(ofstream& out,
 /**
  * Serializes the members of a set.
  */
-void t_haxe_generator::generate_serialize_set_element(ofstream& out, t_set* tset, string iter) {
+void t_haxe_generator::generate_serialize_set_element(ostream& out, t_set* tset, string iter) {
   t_field efield(tset->get_elem_type(), iter);
   generate_serialize_field(out, &efield, "");
 }
@@ -2519,7 +2511,7 @@ void t_haxe_generator::generate_serialize_set_element(ofstream& out, t_set* tset
 /**
  * Serializes the members of a list.
  */
-void t_haxe_generator::generate_serialize_list_element(ofstream& out, t_list* tlist, string iter) {
+void t_haxe_generator::generate_serialize_list_element(ostream& out, t_list* tlist, string iter) {
   t_field efield(tlist->get_elem_type(), iter);
   generate_serialize_field(out, &efield, "");
 }
@@ -2606,8 +2598,8 @@ string t_haxe_generator::type_name(t_type* ttype, bool in_container, bool in_ini
 
   // Check for namespacing
   t_program* program = ttype->get_program();
-  if (program != NULL && program != program_) {
-    string package = program->get_namespace("haxe");
+  if (program != nullptr && program != program_) {
+    string package = make_package_name( program->get_namespace("haxe"));
     if (!package.empty()) {
       return package + "." + ttype->get_name();
     }
@@ -2660,8 +2652,8 @@ string t_haxe_generator::declare_field(t_field* tfield, bool init) {
   string result = "var " + tfield->get_name() + " : " + type_name(tfield->get_type());
   if (init) {
     t_type* ttype = get_true_type(tfield->get_type());
-    if (ttype->is_base_type() && tfield->get_value() != NULL) {
-      ofstream dummy;
+    if (ttype->is_base_type() && tfield->get_value() != nullptr) {
+      std::ofstream dummy;
       result += " = " + render_const_value(dummy, tfield->get_name(), ttype, tfield->get_value());
     } else if (ttype->is_base_type()) {
       t_base_type::t_base tbase = ((t_base_type*)ttype)->get_base();
@@ -2702,7 +2694,7 @@ string t_haxe_generator::declare_field(t_field* tfield, bool init) {
  * @param tfunction Function definition
  * @return String of rendered function definition
  */
-string t_haxe_generator::function_signature_callback(t_function* tfunction) {
+string t_haxe_generator::function_signature_combined(t_function* tfunction) {
   std::string on_error_success = "onError : Dynamic->Void = null, "
                                  + generate_service_method_onsuccess(tfunction, true, false);
 
@@ -2714,7 +2706,14 @@ string t_haxe_generator::function_signature_callback(t_function* tfunction) {
     arguments += on_error_success; //"onError : Function, onSuccess : Function";
   }
 
-  std::string result = "function " + tfunction->get_name() + "(" + arguments + ") : Void";
+  std::string resulttype;
+  if (tfunction->is_oneway() || tfunction->get_returntype()->is_void()) {
+    resulttype = "Void";
+  } else {
+    resulttype = type_name(tfunction->get_returntype());
+  }
+
+  std::string result = "function " + tfunction->get_name() + "(" + arguments + ") : "+resulttype;
   return result;
 }
 
@@ -2884,9 +2883,7 @@ string t_haxe_generator::constant_name(string name) {
 
   bool is_first = true;
   bool was_previous_char_upper = false;
-  for (string::iterator iter = name.begin(); iter != name.end(); ++iter) {
-    string::value_type character = (*iter);
-
+  for (char character : name) {
     bool is_upper = isupper(character);
 
     if (is_upper && !is_first && !was_previous_char_upper) {
@@ -2904,7 +2901,7 @@ string t_haxe_generator::constant_name(string name) {
 /**
  * Enables RTTI for a class or interface
  */
-void t_haxe_generator::generate_rtti_decoration(ofstream& out) {
+void t_haxe_generator::generate_rtti_decoration(ostream& out) {
   if (rtti_) {
     out << "@:rtti" << endl;
   }
@@ -2913,7 +2910,7 @@ void t_haxe_generator::generate_rtti_decoration(ofstream& out) {
 /**
  * Adds build macros to a class or interface
  */
-void t_haxe_generator::generate_macro_decoration(ofstream& out) {
+void t_haxe_generator::generate_macro_decoration(ostream& out) {
   if (!buildmacro_.empty()) {
     out << "#if ! macro" << endl;
     out << "@:build( " << buildmacro_ << ")" << endl;     // current class/interface
@@ -2925,7 +2922,7 @@ void t_haxe_generator::generate_macro_decoration(ofstream& out) {
 /**
  * Emits a haxeDoc comment if the provided object has a doc in Thrift
  */
-void t_haxe_generator::generate_haxe_doc(ofstream& out, t_doc* tdoc) {
+void t_haxe_generator::generate_haxe_doc(ostream& out, t_doc* tdoc) {
   if (tdoc->has_doc()) {
     generate_docstring_comment(out, "/**\n", " * ", tdoc->get_doc(), " */\n");
   }
@@ -2934,7 +2931,7 @@ void t_haxe_generator::generate_haxe_doc(ofstream& out, t_doc* tdoc) {
 /**
  * Emits a haxeDoc comment if the provided function object has a doc in Thrift
  */
-void t_haxe_generator::generate_haxe_doc(ofstream& out, t_function* tfunction) {
+void t_haxe_generator::generate_haxe_doc(ostream& out, t_function* tfunction) {
   if (tfunction->has_doc()) {
     stringstream ss;
     ss << tfunction->get_doc();
@@ -2959,7 +2956,7 @@ std::string t_haxe_generator::generate_isset_check(std::string field_name) {
   return "is" + get_cap_name("set") + get_cap_name(field_name) + "()";
 }
 
-void t_haxe_generator::generate_isset_set(ofstream& out, t_field* field) {
+void t_haxe_generator::generate_isset_set(ostream& out, t_field* field) {
   if (!type_can_be_null(field->get_type())) {
     indent(out) << "this.__isset_" << field->get_name() << " = true;" << endl;
   }
@@ -2968,8 +2965,8 @@ void t_haxe_generator::generate_isset_set(ofstream& out, t_field* field) {
 std::string t_haxe_generator::get_enum_class_name(t_type* type) {
   string package = "";
   t_program* program = type->get_program();
-  if (program != NULL /*&& program != program_*/) {
-    package = program->get_namespace("haxe") + ".";
+  if (program != nullptr /*&& program != program_*/) {
+    package = make_package_name( program->get_namespace("haxe")) + ".";
   }
   return package + type->get_name();
 }
@@ -2977,7 +2974,6 @@ std::string t_haxe_generator::get_enum_class_name(t_type* type) {
 THRIFT_REGISTER_GENERATOR(
     haxe,
     "Haxe",
-    "    callbacks        Use onError()/onSuccess() callbacks for service methods (like AS3)\n"
     "    rtti             Enable @:rtti for generated classes and interfaces\n"
     "    buildmacro=my.macros.Class.method(args)\n"
     "                     Add @:build macro calls to generated classes and interfaces\n")

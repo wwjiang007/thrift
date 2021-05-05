@@ -15,15 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#[macro_use]
-extern crate clap;
-
-extern crate thrift;
-extern crate thrift_tutorial;
+use clap::{clap_app, value_t};
 
 use thrift::protocol::{TCompactInputProtocol, TCompactOutputProtocol};
-use thrift::transport::{ReadHalf, TFramedReadTransport, TFramedWriteTransport, TIoChannel,
-                        TTcpChannel, WriteHalf};
+use thrift::transport::{
+    ReadHalf, TFramedReadTransport, TFramedWriteTransport, TIoChannel, TTcpChannel, WriteHalf,
+};
 
 use thrift_tutorial::shared::TSharedServiceSyncClient;
 use thrift_tutorial::tutorial::{CalculatorSyncClient, Operation, TCalculatorSyncClient, Work};
@@ -70,12 +67,11 @@ fn run() -> thrift::Result<()> {
     let logid = 32;
 
     // let's do...a multiply!
-    let res = client
-        .calculate(logid, Work::new(7, 8, Operation::MULTIPLY, None))?;
+    let res = client.calculate(logid, Work::new(7, 8, Operation::MULTIPLY, None))?;
     println!("multiplied 7 and 8 and got {}", res);
 
     // let's get the log for it
-    let res = client.get_struct(32)?;
+    let res = client.get_struct(logid /* 32 */)?;
     println!("got log {:?} for operation {}", res, logid);
 
     // ok - let's be bad :(
@@ -103,8 +99,7 @@ fn run() -> thrift::Result<()> {
 type ClientInputProtocol = TCompactInputProtocol<TFramedReadTransport<ReadHalf<TTcpChannel>>>;
 type ClientOutputProtocol = TCompactOutputProtocol<TFramedWriteTransport<WriteHalf<TTcpChannel>>>;
 
-fn new_client
-    (
+fn new_client(
     host: &str,
     port: u16,
 ) -> thrift::Result<CalculatorSyncClient<ClientInputProtocol, ClientOutputProtocol>> {

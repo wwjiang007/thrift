@@ -25,7 +25,8 @@
 #endif
 
 #include <thrift/concurrency/Exception.h>
-#include <boost/noncopyable.hpp>
+#include <thrift/TNonCopyable.h>
+
 #include <Windows.h>
 
 /*
@@ -36,13 +37,13 @@
 namespace apache {
 namespace thrift {
 
-struct TCriticalSection : boost::noncopyable {
+struct TCriticalSection : apache::thrift::TNonCopyable {
   CRITICAL_SECTION cs;
   TCriticalSection() { InitializeCriticalSection(&cs); }
   ~TCriticalSection() { DeleteCriticalSection(&cs); }
 };
 
-class TAutoCrit : boost::noncopyable {
+class TAutoCrit : apache::thrift::TNonCopyable {
 private:
   CRITICAL_SECTION* cs_;
 
@@ -51,12 +52,12 @@ public:
   ~TAutoCrit() { LeaveCriticalSection(cs_); }
 };
 
-struct TAutoResetEvent : boost::noncopyable {
+struct TAutoResetEvent : apache::thrift::TNonCopyable {
   HANDLE h;
 
   TAutoResetEvent() {
-    h = CreateEvent(NULL, FALSE, FALSE, NULL);
-    if (h == NULL) {
+    h = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    if (h == nullptr) {
       GlobalOutput.perror("TAutoResetEvent unable to create event, GLE=", GetLastError());
       throw apache::thrift::concurrency::SystemResourceException("CreateEvent failed");
     }
@@ -64,12 +65,12 @@ struct TAutoResetEvent : boost::noncopyable {
   ~TAutoResetEvent() { CloseHandle(h); }
 };
 
-struct TManualResetEvent : boost::noncopyable {
+struct TManualResetEvent : apache::thrift::TNonCopyable {
   HANDLE h;
 
   TManualResetEvent() {
-    h = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (h == NULL) {
+    h = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+    if (h == nullptr) {
       GlobalOutput.perror("TManualResetEvent unable to create event, GLE=", GetLastError());
       throw apache::thrift::concurrency::SystemResourceException("CreateEvent failed");
     }
@@ -77,7 +78,7 @@ struct TManualResetEvent : boost::noncopyable {
   ~TManualResetEvent() { CloseHandle(h); }
 };
 
-struct TAutoHandle : boost::noncopyable {
+struct TAutoHandle : apache::thrift::TNonCopyable {
   HANDLE h;
   explicit TAutoHandle(HANDLE h_ = INVALID_HANDLE_VALUE) : h(h_) {}
   ~TAutoHandle() {

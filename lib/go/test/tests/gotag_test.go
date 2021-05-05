@@ -20,9 +20,10 @@
 package tests
 
 import (
-	"gotagtest"
 	"reflect"
 	"testing"
+
+	"github.com/apache/thrift/lib/go/test/gopath/src/gotagtest"
 )
 
 func TestDefaultTag(t *testing.T) {
@@ -38,8 +39,16 @@ func TestCustomTag(t *testing.T) {
 	s := gotagtest.Tagged{}
 	st := reflect.TypeOf(s)
 	field, ok := st.FieldByName("IntThing")
-	if !ok || field.Tag.Get("json") != "int_thing,string" {
-		t.Error("Unexpected custom tag value")
+	if !ok {
+		t.Error("Missing field IntThing")
+		return
+	}
+
+	if v := field.Tag.Get("json"); v != "custom_thing" {
+		t.Errorf("Expected custom_thing for tag json, got %s", v)
+	}
+	if v := field.Tag.Get("mykey"); v != "myvalue" {
+		t.Errorf("Expected myvalue for tag mykey, got %s", v)
 	}
 }
 
@@ -49,5 +58,14 @@ func TestOptionalTag(t *testing.T) {
 	field, ok := st.FieldByName("OptionalIntThing")
 	if !ok || field.Tag.Get("json") != "optional_int_thing,omitempty" {
 		t.Error("Unexpected default tag value for optional field")
+	}
+}
+
+func TestOptionalTagWithDefaultValue(t *testing.T) {
+	s := gotagtest.Tagged{}
+	st := reflect.TypeOf(s)
+	field, ok := st.FieldByName("OptionalBoolThing")
+	if !ok || field.Tag.Get("json") != "optional_bool_thing" {
+		t.Error("Unexpected default tag value for optional field that has a default value")
 	}
 }

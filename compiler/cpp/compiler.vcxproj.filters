@@ -92,16 +92,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\audit\t_audit.cpp"/>
-    <ClCompile Include="src\generate\t_as3_generator.cc">
-      <Filter>generate</Filter>
-    </ClCompile>
     <ClCompile Include="src\generate\t_cocoa_generator.cc">
       <Filter>generate</Filter>
     </ClCompile>
     <ClCompile Include="src\generate\t_cpp_generator.cc">
-      <Filter>generate</Filter>
-    </ClCompile>
-    <ClCompile Include="src\generate\t_csharp_generator.cc">
       <Filter>generate</Filter>
     </ClCompile>
     <ClCompile Include="src\generate\t_c_glib_generator.cc">
@@ -131,10 +125,10 @@
     <ClCompile Include="src\generate\t_haxe_generator.cc">
       <Filter>generate</Filter>
     </ClCompile>
-    <ClCompile Include="src\generate\t_hs_generator.cc">
+    <ClCompile Include="src\generate\t_html_generator.cc">
       <Filter>generate</Filter>
     </ClCompile>
-    <ClCompile Include="src\generate\t_html_generator.cc">
+    <ClCompile Include="src\generate\t_markdown_generator.cc">
       <Filter>generate</Filter>
     </ClCompile>
     <ClCompile Include="src\generate\t_javame_generator.cc">
@@ -159,6 +153,12 @@
       <Filter>generate</Filter>
     </ClCompile>
     <ClCompile Include="src\generate\t_rb_generator.cc">
+      <Filter>generate</Filter>
+    </ClCompile>
+    <ClCompile Include="src\generate\t_netstd_generator.h">
+      <Filter>generate</Filter>
+    </ClCompile>
+    <ClCompile Include="src\generate\t_netstd_generator.cc">
       <Filter>generate</Filter>
     </ClCompile>
     <ClCompile Include="src\generate\t_rs_generator.cc">

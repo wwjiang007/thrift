@@ -15,18 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use log::debug;
+
 use std::collections::HashMap;
+use std::convert::Into;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-use std::convert::Into;
 use std::sync::{Arc, Mutex};
 
-use protocol::{TInputProtocol, TMessageIdentifier, TOutputProtocol, TStoredInputProtocol};
+use crate::protocol::{TInputProtocol, TMessageIdentifier, TOutputProtocol, TStoredInputProtocol};
 
-use super::{TProcessor, handle_process_result};
+use super::{handle_process_result, TProcessor};
 
-const MISSING_SEPARATOR_AND_NO_DEFAULT: &'static str = "missing service separator and no default processor set";
-type ThreadSafeProcessor = Box<TProcessor + Send + Sync>;
+const MISSING_SEPARATOR_AND_NO_DEFAULT: &str =
+    "missing service separator and no default processor set";
+type ThreadSafeProcessor = Box<dyn TProcessor + Send + Sync>;
 
 /// A `TProcessor` that can demux service calls to multiple underlying
 /// Thrift services.
@@ -54,12 +57,10 @@ impl TMultiplexedProcessor {
     /// processors.
     pub fn new() -> TMultiplexedProcessor {
         TMultiplexedProcessor {
-            stored: Mutex::new(
-                StoredProcessors {
-                    processors: HashMap::new(),
-                    default_processor: None,
-                },
-            ),
+            stored: Mutex::new(StoredProcessors {
+                processors: HashMap::new(),
+                default_processor: None,
+            }),
         }
     }
 
@@ -71,13 +72,13 @@ impl TMultiplexedProcessor {
     /// Returns success if a new entry was inserted. Returns an error if:
     /// * A processor exists for `service_name`
     /// * You attempt to register a processor as default, and an existing default exists
-    #[cfg_attr(feature = "cargo-clippy", allow(map_entry))]
+    #[allow(clippy::map_entry)]
     pub fn register<S: Into<String>>(
         &mut self,
         service_name: S,
-        processor: Box<TProcessor + Send + Sync>,
+        processor: Box<dyn TProcessor + Send + Sync>,
         as_default: bool,
-    ) -> ::Result<()> {
+    ) -> crate::Result<()> {
         let mut stored = self.stored.lock().unwrap();
 
         let name = service_name.into();
@@ -97,16 +98,16 @@ impl TMultiplexedProcessor {
                 Ok(())
             }
         } else {
-            Err(format!("cannot overwrite existing processor for service {}", name).into(),)
+            Err(format!("cannot overwrite existing processor for service {}", name).into())
         }
     }
 
     fn process_message(
         &self,
         msg_ident: &TMessageIdentifier,
-        i_prot: &mut TInputProtocol,
-        o_prot: &mut TOutputProtocol,
-    ) -> ::Result<()> {
+        i_prot: &mut dyn TInputProtocol,
+        o_prot: &mut dyn TOutputProtocol,
+    ) -> crate::Result<()> {
         let (svc_name, svc_call) = split_ident_name(&msg_ident.name);
         debug!("routing svc_name {:?} svc_call {}", &svc_name, &svc_call);
 
@@ -135,7 +136,11 @@ impl TMultiplexedProcessor {
 }
 
 impl TProcessor for TMultiplexedProcessor {
-    fn process(&self, i_prot: &mut TInputProtocol, o_prot: &mut TOutputProtocol) -> ::Result<()> {
+    fn process(
+        &self,
+        i_prot: &mut dyn TInputProtocol,
+        o_prot: &mut dyn TOutputProtocol,
+    ) -> crate::Result<()> {
         let msg_ident = i_prot.read_message_begin()?;
 
         debug!("process incoming msg id:{:?}", &msg_ident);
@@ -146,7 +151,7 @@ impl TProcessor for TMultiplexedProcessor {
 }
 
 impl Debug for TMultiplexedProcessor {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let stored = self.stored.lock().unwrap();
         write!(
             f,
@@ -160,13 +165,11 @@ impl Debug for TMultiplexedProcessor {
 fn split_ident_name(ident_name: &str) -> (Option<&str>, &str) {
     ident_name
         .find(':')
-        .map(
-            |pos| {
-                let (svc_name, svc_call) = ident_name.split_at(pos);
-                let (_, svc_call) = svc_call.split_at(1); // remove colon from service call name
-                (Some(svc_name), svc_call)
-            },
-        )
+        .map(|pos| {
+            let (svc_name, svc_call) = ident_name.split_at(pos);
+            let (_, svc_call) = svc_call.split_at(1); // remove colon from service call name
+            (Some(svc_name), svc_call)
+        })
         .or_else(|| Some((None, ident_name)))
         .unwrap()
 }
@@ -181,12 +184,14 @@ fn missing_processor_message(svc_name: Option<&str>) -> String {
 #[cfg(test)]
 mod tests {
     use std::convert::Into;
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
 
-    use {ApplicationError, ApplicationErrorKind};
-    use protocol::{TBinaryInputProtocol, TBinaryOutputProtocol, TMessageIdentifier, TMessageType};
-    use transport::{ReadHalf, TBufferChannel, TIoChannel, WriteHalf};
+    use crate::protocol::{
+        TBinaryInputProtocol, TBinaryOutputProtocol, TMessageIdentifier, TMessageType,
+    };
+    use crate::transport::{ReadHalf, TBufferChannel, TIoChannel, WriteHalf};
+    use crate::{ApplicationError, ApplicationErrorKind};
 
     use super::*;
 
@@ -219,12 +224,11 @@ mod tests {
         let p = TMultiplexedProcessor::new();
         p.process(&mut i, &mut o).unwrap(); // at this point an error should be written out
 
-        i.transport
-            .set_readable_bytes(&o.transport.write_bytes());
+        i.transport.set_readable_bytes(&o.transport.write_bytes());
         let rcvd_ident = i.read_message_begin().unwrap();
         let expected_ident = TMessageIdentifier::new("foo", TMessageType::Exception, 10);
         assert_eq!(rcvd_ident, expected_ident);
-        let rcvd_err = ::Error::read_application_error_from_in_protocol(&mut i).unwrap();
+        let rcvd_err = crate::Error::read_application_error_from_in_protocol(&mut i).unwrap();
         let expected_err = ApplicationError::new(
             ApplicationErrorKind::Unknown,
             MISSING_SEPARATOR_AND_NO_DEFAULT,
@@ -245,12 +249,11 @@ mod tests {
         let p = TMultiplexedProcessor::new();
         p.process(&mut i, &mut o).unwrap(); // at this point an error should be written out
 
-        i.transport
-            .set_readable_bytes(&o.transport.write_bytes());
+        i.transport.set_readable_bytes(&o.transport.write_bytes());
         let rcvd_ident = i.read_message_begin().unwrap();
         let expected_ident = TMessageIdentifier::new("missing:call", TMessageType::Exception, 10);
         assert_eq!(rcvd_ident, expected_ident);
-        let rcvd_err = ::Error::read_application_error_from_in_protocol(&mut i).unwrap();
+        let rcvd_err = crate::Error::read_application_error_from_in_protocol(&mut i).unwrap();
         let expected_err = ApplicationError::new(
             ApplicationErrorKind::Unknown,
             missing_processor_message(Some("missing")),
@@ -264,8 +267,13 @@ mod tests {
     }
 
     impl TProcessor for Service {
-        fn process(&self, _: &mut TInputProtocol, _: &mut TOutputProtocol) -> ::Result<()> {
-            let res = self.invoked
+        fn process(
+            &self,
+            _: &mut dyn TInputProtocol,
+            _: &mut dyn TOutputProtocol,
+        ) -> crate::Result<()> {
+            let res = self
+                .invoked
                 .compare_and_swap(false, true, Ordering::Relaxed);
             if res {
                 Ok(())
@@ -280,9 +288,13 @@ mod tests {
         let (mut i, mut o) = build_objects();
 
         // build the services
-        let svc_1 = Service { invoked: Arc::new(AtomicBool::new(false)) };
+        let svc_1 = Service {
+            invoked: Arc::new(AtomicBool::new(false)),
+        };
         let atm_1 = svc_1.invoked.clone();
-        let svc_2 = Service { invoked: Arc::new(AtomicBool::new(false)) };
+        let svc_2 = Service {
+            invoked: Arc::new(AtomicBool::new(false)),
+        };
         let atm_2 = svc_2.invoked.clone();
 
         // register them
@@ -309,9 +321,13 @@ mod tests {
         let (mut i, mut o) = build_objects();
 
         // build the services
-        let svc_1 = Service { invoked: Arc::new(AtomicBool::new(false)) };
+        let svc_1 = Service {
+            invoked: Arc::new(AtomicBool::new(false)),
+        };
         let atm_1 = svc_1.invoked.clone();
-        let svc_2 = Service { invoked: Arc::new(AtomicBool::new(false)) };
+        let svc_2 = Service {
+            invoked: Arc::new(AtomicBool::new(false)),
+        };
         let atm_2 = svc_2.invoked.clone();
 
         // register them
@@ -333,12 +349,15 @@ mod tests {
         assert_eq!(atm_2.load(Ordering::Relaxed), true);
     }
 
-    fn build_objects()
-        -> (TBinaryInputProtocol<ReadHalf<TBufferChannel>>,
-            TBinaryOutputProtocol<WriteHalf<TBufferChannel>>)
-    {
+    fn build_objects() -> (
+        TBinaryInputProtocol<ReadHalf<TBufferChannel>>,
+        TBinaryOutputProtocol<WriteHalf<TBufferChannel>>,
+    ) {
         let c = TBufferChannel::with_capacity(128, 128);
         let (r_c, w_c) = c.split().unwrap();
-        (TBinaryInputProtocol::new(r_c, true), TBinaryOutputProtocol::new(w_c, true))
+        (
+            TBinaryInputProtocol::new(r_c, true),
+            TBinaryOutputProtocol::new(w_c, true),
+        )
     }
 }

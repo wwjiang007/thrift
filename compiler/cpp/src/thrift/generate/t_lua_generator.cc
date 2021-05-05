@@ -21,7 +21,7 @@
 #include "thrift/platform.h"
 #include "thrift/generate/t_oop_generator.h"
 
-using std::ofstream;
+using std::ostream;
 using std::string;
 using std::vector;
 using std::map;
@@ -56,18 +56,18 @@ public:
   /**
    * Init and close methods
    */
-  void init_generator();
-  void close_generator();
+  void init_generator() override;
+  void close_generator() override;
 
   /**
    * Program-level generation functions
    */
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
-  void generate_const(t_const* tconst);
-  void generate_struct(t_struct* tstruct);
-  void generate_xception(t_struct* txception);
-  void generate_service(t_service* tservice);
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
+  void generate_const(t_const* tconst) override;
+  void generate_struct(t_struct* tstruct) override;
+  void generate_xception(t_struct* txception) override;
+  void generate_service(t_service* tservice) override;
 
   std::string render_const_value(t_type* type, t_const_value* value);
 
@@ -80,65 +80,65 @@ private:
   /**
    * Struct-level generation functions
    */
-  void generate_lua_struct_definition(std::ofstream& out,
+  void generate_lua_struct_definition(std::ostream& out,
                                       t_struct* tstruct,
                                       bool is_xception = false);
-  void generate_lua_struct_reader(std::ofstream& out, t_struct* tstruct);
-  void generate_lua_struct_writer(std::ofstream& out, t_struct* tstruct);
+  void generate_lua_struct_reader(std::ostream& out, t_struct* tstruct);
+  void generate_lua_struct_writer(std::ostream& out, t_struct* tstruct);
 
   /**
    * Service-level generation functions
    */
-  void generate_service_client(std::ofstream& out, t_service* tservice);
-  void generate_service_interface(std::ofstream& out, t_service* tservice);
-  void generate_service_processor(std::ofstream& out, t_service* tservice);
-  void generate_process_function(std::ofstream& out, t_service* tservice, t_function* tfunction);
-  void generate_service_helpers(ofstream& out, t_service* tservice);
-  void generate_function_helpers(ofstream& out, t_function* tfunction);
+  void generate_service_client(std::ostream& out, t_service* tservice);
+  void generate_service_interface(std::ostream& out, t_service* tservice);
+  void generate_service_processor(std::ostream& out, t_service* tservice);
+  void generate_process_function(std::ostream& out, t_service* tservice, t_function* tfunction);
+  void generate_service_helpers(ostream& out, t_service* tservice);
+  void generate_function_helpers(ostream& out, t_function* tfunction);
 
   /**
    * Deserialization (Read)
    */
-  void generate_deserialize_field(std::ofstream& out,
+  void generate_deserialize_field(std::ostream& out,
                                   t_field* tfield,
                                   bool local,
                                   std::string prefix = "");
 
-  void generate_deserialize_struct(std::ofstream& out,
+  void generate_deserialize_struct(std::ostream& out,
                                    t_struct* tstruct,
                                    bool local,
                                    std::string prefix = "");
 
-  void generate_deserialize_container(std::ofstream& out,
+  void generate_deserialize_container(std::ostream& out,
                                       t_type* ttype,
                                       bool local,
                                       std::string prefix = "");
 
-  void generate_deserialize_set_element(std::ofstream& out, t_set* tset, std::string prefix = "");
+  void generate_deserialize_set_element(std::ostream& out, t_set* tset, std::string prefix = "");
 
-  void generate_deserialize_map_element(std::ofstream& out, t_map* tmap, std::string prefix = "");
+  void generate_deserialize_map_element(std::ostream& out, t_map* tmap, std::string prefix = "");
 
-  void generate_deserialize_list_element(std::ofstream& out,
+  void generate_deserialize_list_element(std::ostream& out,
                                          t_list* tlist,
                                          std::string prefix = "");
 
   /**
    * Serialization (Write)
    */
-  void generate_serialize_field(std::ofstream& out, t_field* tfield, std::string prefix = "");
+  void generate_serialize_field(std::ostream& out, t_field* tfield, std::string prefix = "");
 
-  void generate_serialize_struct(std::ofstream& out, t_struct* tstruct, std::string prefix = "");
+  void generate_serialize_struct(std::ostream& out, t_struct* tstruct, std::string prefix = "");
 
-  void generate_serialize_container(std::ofstream& out, t_type* ttype, std::string prefix = "");
+  void generate_serialize_container(std::ostream& out, t_type* ttype, std::string prefix = "");
 
-  void generate_serialize_map_element(std::ofstream& out,
+  void generate_serialize_map_element(std::ostream& out,
                                       t_map* tmap,
                                       std::string kiter,
                                       std::string viter);
 
-  void generate_serialize_set_element(std::ofstream& out, t_set* tmap, std::string iter);
+  void generate_serialize_set_element(std::ostream& out, t_set* tmap, std::string iter);
 
-  void generate_serialize_list_element(std::ofstream& out, t_list* tlist, std::string iter);
+  void generate_serialize_list_element(std::ostream& out, t_list* tlist, std::string iter);
 
   /**
    * Helper rendering functions
@@ -149,7 +149,7 @@ private:
   std::string type_to_enum(t_type* ttype);
   static std::string get_namespace(const t_program* program);
 
-  std::string autogen_comment() {
+  std::string autogen_comment() override {
     return std::string("--\n") + "-- Autogenerated by Thrift\n" + "--\n"
            + "-- DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING\n" + "-- @"
                                                                                        "generated\n"
@@ -159,9 +159,9 @@ private:
   /**
    * File streams
    */
-  std::ofstream f_types_;
-  std::ofstream f_consts_;
-  std::ofstream f_service_;
+  ofstream_with_content_based_conditional_update f_types_;
+  ofstream_with_content_based_conditional_update f_consts_;
+  ofstream_with_content_based_conditional_update f_service_;
 };
 
 /**
@@ -197,6 +197,9 @@ void t_lua_generator::close_generator() {
  * Generate a typedef (essentially a constant)
  */
 void t_lua_generator::generate_typedef(t_typedef* ttypedef) {
+  if (ttypedef->get_type()->get_name().empty()) {
+    return;
+  }
   f_types_ << endl << endl << indent() << ttypedef->get_symbolic() << " = "
            << ttypedef->get_type()->get_name();
 }
@@ -276,16 +279,16 @@ string t_lua_generator::render_const_value(t_type* type, t_const_value* value) {
 
     const vector<t_field*>& fields = ((t_struct*)type)->get_members();
     vector<t_field*>::const_iterator f_iter;
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end();) {
-      t_type* field_type = NULL;
+      t_type* field_type = nullptr;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
         if ((*f_iter)->get_name() == v_iter->first->get_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
-      if (field_type == NULL) {
+      if (field_type == nullptr) {
         throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
       }
 
@@ -308,8 +311,8 @@ string t_lua_generator::render_const_value(t_type* type, t_const_value* value) {
     t_type* ktype = ((t_map*)type)->get_key_type();
     t_type* vtype = ((t_map*)type)->get_val_type();
 
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end();) {
       indent(out) << "[" << render_const_value(ktype, v_iter->first)
                   << "] = " << render_const_value(vtype, v_iter->second);
@@ -366,7 +369,7 @@ void t_lua_generator::generate_xception(t_struct* txception) {
 /**
  * Generate a thrift struct or exception (lua table)
  */
-void t_lua_generator::generate_lua_struct_definition(ofstream& out,
+void t_lua_generator::generate_lua_struct_definition(ostream& out,
                                                      t_struct* tstruct,
                                                      bool is_exception) {
   vector<t_field*>::const_iterator m_iter;
@@ -402,7 +405,7 @@ void t_lua_generator::generate_lua_struct_definition(ofstream& out,
 /**
  * Generate a struct/exception reader
  */
-void t_lua_generator::generate_lua_struct_reader(ofstream& out, t_struct* tstruct) {
+void t_lua_generator::generate_lua_struct_reader(ostream& out, t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
@@ -459,7 +462,7 @@ void t_lua_generator::generate_lua_struct_reader(ofstream& out, t_struct* tstruc
 /**
  * Generate a struct/exception writer
  */
-void t_lua_generator::generate_lua_struct_writer(ofstream& out, t_struct* tstruct) {
+void t_lua_generator::generate_lua_struct_writer(ostream& out, t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
@@ -510,7 +513,7 @@ void t_lua_generator::generate_service(t_service* tservice) {
   if (gen_requires_) {
     f_service_ << endl << "require '" << cur_ns << "ttypes'" << endl;
 
-    if (tservice->get_extends() != NULL) {
+    if (tservice->get_extends() != nullptr) {
       f_service_ << "require '" << get_namespace(tservice->get_extends()->get_program())
                  << tservice->get_extends()->get_name() << "'" << endl;
     }
@@ -527,7 +530,7 @@ void t_lua_generator::generate_service(t_service* tservice) {
   f_service_.close();
 }
 
-void t_lua_generator::generate_service_interface(ofstream& out, t_service* tservice) {
+void t_lua_generator::generate_service_interface(ostream& out, t_service* tservice) {
   string classname = tservice->get_name() + "Iface";
   t_service* extends_s = tservice->get_extends();
 
@@ -541,13 +544,13 @@ void t_lua_generator::generate_service_interface(ofstream& out, t_service* tserv
   out << "  __type = '" << classname << "'" << endl << "}" << endl << endl;
 }
 
-void t_lua_generator::generate_service_client(ofstream& out, t_service* tservice) {
+void t_lua_generator::generate_service_client(ostream& out, t_service* tservice) {
   string classname = tservice->get_name() + "Client";
   t_service* extends_s = tservice->get_extends();
 
   // Client object definition
   out << classname << " = __TObject.new(";
-  if (extends_s != NULL) {
+  if (extends_s != nullptr) {
     out << extends_s->get_name() << "Client";
   } else {
     out << "__TClient";
@@ -637,13 +640,13 @@ void t_lua_generator::generate_service_client(ofstream& out, t_service* tservice
   }
 }
 
-void t_lua_generator::generate_service_processor(ofstream& out, t_service* tservice) {
+void t_lua_generator::generate_service_processor(ostream& out, t_service* tservice) {
   string classname = tservice->get_name() + "Processor";
   t_service* extends_s = tservice->get_extends();
 
   // Define processor table
   out << endl << classname << " = __TObject.new(";
-  if (extends_s != NULL) {
+  if (extends_s != nullptr) {
     out << extends_s->get_name() << "Processor" << endl;
   } else {
     out << "__TProcessor" << endl;
@@ -656,7 +659,9 @@ void t_lua_generator::generate_service_processor(ofstream& out, t_service* tserv
 
   indent(out) << "local name, mtype, seqid = iprot:readMessageBegin()" << endl;
   indent(out) << "local func_name = 'process_' .. name" << endl;
-  indent(out) << "if not self[func_name] or ttype(self[func_name]) ~= 'function' then";
+  indent(out) << "if not self[func_name] or ttype(self[func_name]) ~= 'function' then" << endl;
+  indent_up();
+  indent(out) << "if oprot ~= nil then";
   indent_up();
   out << endl << indent() << "iprot:skip(TType.STRUCT)" << endl << indent()
       << "iprot:readMessageEnd()" << endl << indent() << "x = TApplicationException:new{" << endl
@@ -665,8 +670,11 @@ void t_lua_generator::generate_service_processor(ofstream& out, t_service* tserv
       << "seqid)" << endl << indent() << "x:write(oprot)" << endl << indent()
       << "oprot:writeMessageEnd()" << endl << indent() << "oprot.trans:flush()" << endl;
   indent_down();
+  out << indent() << "end" << endl << indent()
+      << "return false, 'Unknown function '..name" << endl;
+  indent_down();
   indent(out) << "else" << endl << indent()
-              << "  self[func_name](self, seqid, iprot, oprot, server_ctx)" << endl << indent()
+              << "  return self[func_name](self, seqid, iprot, oprot, server_ctx)" << endl << indent()
               << "end" << endl;
 
   indent_down();
@@ -680,7 +688,7 @@ void t_lua_generator::generate_service_processor(ofstream& out, t_service* tserv
   }
 }
 
-void t_lua_generator::generate_process_function(ofstream& out,
+void t_lua_generator::generate_process_function(ostream& out,
                                                 t_service* tservice,
                                                 t_function* tfunction) {
   string classname = tservice->get_name() + "Processor";
@@ -695,43 +703,51 @@ void t_lua_generator::generate_process_function(ofstream& out,
   // Read the request
   out << indent() << "local args = " << argsname << ":new{}" << endl << indent()
       << "local reply_type = TMessageType.REPLY" << endl << indent() << "args:read(iprot)" << endl
-      << indent() << "iprot:readMessageEnd()" << endl << indent() << "local result = " << resultname
-      << ":new{}" << endl << indent() << "local status, res = pcall(self.handler." << fn_name
-      << ", self.handler";
+      << indent() << "iprot:readMessageEnd()" << endl;
 
+  if (!tfunction->is_oneway()) {
+      out << indent() << "local result = " << resultname
+          << ":new{}" << endl;
+  }
+
+  out <<  indent() << "local status, res = pcall(self.handler." << fn_name
+      << ", self.handler";
   // Print arguments
   t_struct* args = tfunction->get_arglist();
   if (args->get_members().size() > 0) {
     out << ", " << argument_list(args, "args.");
   }
+  out << ")" << endl;
 
-  // Check for errors
-  out << ")" << endl << indent() << "if not status then" << endl << indent()
-      << "  reply_type = TMessageType.EXCEPTION" << endl << indent()
-      << "  result = TApplicationException:new{message = res}" << endl;
+  if (!tfunction->is_oneway()) {
+      // Check for errors
+      out << indent() << "if not status then" << endl << indent()
+          << "  reply_type = TMessageType.EXCEPTION" << endl << indent()
+          << "  result = TApplicationException:new{message = res}" << endl;
 
-  // Handle custom exceptions
-  const std::vector<t_field*>& xf = tfunction->get_xceptions()->get_members();
-  if (xf.size() > 0) {
-    vector<t_field*>::const_iterator x_iter;
-    for (x_iter = xf.begin(); x_iter != xf.end(); ++x_iter) {
-      out << indent() << "elseif ttype(res) == '" << (*x_iter)->get_type()->get_name() << "' then"
-          << endl << indent() << "  result." << (*x_iter)->get_name() << " = res" << endl;
-    }
+      // Handle custom exceptions
+      const std::vector<t_field*>& xf = tfunction->get_xceptions()->get_members();
+      if (xf.size() > 0) {
+          vector<t_field*>::const_iterator x_iter;
+          for (x_iter = xf.begin(); x_iter != xf.end(); ++x_iter) {
+              out << indent() << "elseif ttype(res) == '" << (*x_iter)->get_type()->get_name() << "' then"
+                  << endl << indent() << "  result." << (*x_iter)->get_name() << " = res" << endl;
+          }
+      }
+
+      // Set the result and write the reply
+      out << indent() << "else" << endl << indent() << "  result.success = res" << endl << indent()
+          << "end" << endl << indent() << "oprot:writeMessageBegin('" << fn_name << "', reply_type, "
+          << "seqid)" << endl << indent() << "result:write(oprot)" << endl << indent()
+          << "oprot:writeMessageEnd()" << endl << indent() << "oprot.trans:flush()" << endl;
   }
-
-  // Set the result and write the reply
-  out << indent() << "else" << endl << indent() << "  result.success = res" << endl << indent()
-      << "end" << endl << indent() << "oprot:writeMessageBegin('" << fn_name << "', reply_type, "
-      << "seqid)" << endl << indent() << "result:write(oprot)" << endl << indent()
-      << "oprot:writeMessageEnd()" << endl << indent() << "oprot.trans:flush()" << endl;
-
+  out << indent() << "return status, res" << endl;
   indent_down();
   indent(out) << "end" << endl;
 }
 
 // Service helpers
-void t_lua_generator::generate_service_helpers(ofstream& out, t_service* tservice) {
+void t_lua_generator::generate_service_helpers(ostream& out, t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
 
@@ -743,7 +759,7 @@ void t_lua_generator::generate_service_helpers(ofstream& out, t_service* tservic
   }
 }
 
-void t_lua_generator::generate_function_helpers(ofstream& out, t_function* tfunction) {
+void t_lua_generator::generate_function_helpers(ostream& out, t_function* tfunction) {
   if (!tfunction->is_oneway()) {
     t_struct result(program_, tfunction->get_name() + "_result");
     t_field success(tfunction->get_returntype(), "success", 0);
@@ -764,7 +780,7 @@ void t_lua_generator::generate_function_helpers(ofstream& out, t_function* tfunc
 /**
  * Deserialize (Read)
  */
-void t_lua_generator::generate_deserialize_field(ofstream& out,
+void t_lua_generator::generate_deserialize_field(ostream& out,
                                                  t_field* tfield,
                                                  bool local,
                                                  string prefix) {
@@ -825,7 +841,7 @@ void t_lua_generator::generate_deserialize_field(ofstream& out,
   }
 }
 
-void t_lua_generator::generate_deserialize_struct(ofstream& out,
+void t_lua_generator::generate_deserialize_struct(ostream& out,
                                                   t_struct* tstruct,
                                                   bool local,
                                                   string prefix) {
@@ -833,7 +849,7 @@ void t_lua_generator::generate_deserialize_struct(ofstream& out,
               << endl << indent() << prefix << ":read(iprot)" << endl;
 }
 
-void t_lua_generator::generate_deserialize_container(ofstream& out,
+void t_lua_generator::generate_deserialize_container(ostream& out,
                                                      t_type* ttype,
                                                      bool local,
                                                      string prefix) {
@@ -883,7 +899,7 @@ void t_lua_generator::generate_deserialize_container(ofstream& out,
   }
 }
 
-void t_lua_generator::generate_deserialize_map_element(ofstream& out, t_map* tmap, string prefix) {
+void t_lua_generator::generate_deserialize_map_element(ostream& out, t_map* tmap, string prefix) {
   // A map is represented by a table indexable by any lua type
   string key = tmp("_key");
   string val = tmp("_val");
@@ -896,7 +912,7 @@ void t_lua_generator::generate_deserialize_map_element(ofstream& out, t_map* tma
   indent(out) << prefix << "[" << key << "] = " << val << endl;
 }
 
-void t_lua_generator::generate_deserialize_set_element(ofstream& out, t_set* tset, string prefix) {
+void t_lua_generator::generate_deserialize_set_element(ostream& out, t_set* tset, string prefix) {
   // A set is represented by a table indexed by the value
   string elem = tmp("_elem");
   t_field felem(tset->get_elem_type(), elem);
@@ -906,7 +922,7 @@ void t_lua_generator::generate_deserialize_set_element(ofstream& out, t_set* tse
   indent(out) << prefix << "[" << elem << "] = " << elem << endl;
 }
 
-void t_lua_generator::generate_deserialize_list_element(ofstream& out,
+void t_lua_generator::generate_deserialize_list_element(ostream& out,
                                                         t_list* tlist,
                                                         string prefix) {
   // A list is represented by a table indexed by integer values
@@ -922,7 +938,7 @@ void t_lua_generator::generate_deserialize_list_element(ofstream& out,
 /**
  * Serialize (Write)
  */
-void t_lua_generator::generate_serialize_field(ofstream& out, t_field* tfield, string prefix) {
+void t_lua_generator::generate_serialize_field(ostream& out, t_field* tfield, string prefix) {
   t_type* type = get_true_type(tfield->get_type());
   string name = prefix + tfield->get_name();
 
@@ -979,12 +995,12 @@ void t_lua_generator::generate_serialize_field(ofstream& out, t_field* tfield, s
   }
 }
 
-void t_lua_generator::generate_serialize_struct(ofstream& out, t_struct* tstruct, string prefix) {
+void t_lua_generator::generate_serialize_struct(ostream& out, t_struct* tstruct, string prefix) {
   (void)tstruct;
   indent(out) << prefix << ":write(oprot)" << endl;
 }
 
-void t_lua_generator::generate_serialize_container(ofstream& out, t_type* ttype, string prefix) {
+void t_lua_generator::generate_serialize_container(ostream& out, t_type* ttype, string prefix) {
   // Begin writing
   if (ttype->is_map()) {
     indent(out) << "oprot:writeMapBegin(" << type_to_enum(((t_map*)ttype)->get_key_type()) << ", "
@@ -1034,7 +1050,7 @@ void t_lua_generator::generate_serialize_container(ofstream& out, t_type* ttype,
   }
 }
 
-void t_lua_generator::generate_serialize_map_element(ofstream& out,
+void t_lua_generator::generate_serialize_map_element(ostream& out,
                                                      t_map* tmap,
                                                      string kiter,
                                                      string viter) {
@@ -1045,12 +1061,12 @@ void t_lua_generator::generate_serialize_map_element(ofstream& out,
   generate_serialize_field(out, &vfield, "");
 }
 
-void t_lua_generator::generate_serialize_set_element(ofstream& out, t_set* tset, string iter) {
+void t_lua_generator::generate_serialize_set_element(ostream& out, t_set* tset, string iter) {
   t_field efield(tset->get_elem_type(), iter);
   generate_serialize_field(out, &efield, "");
 }
 
-void t_lua_generator::generate_serialize_list_element(ofstream& out, t_list* tlist, string iter) {
+void t_lua_generator::generate_serialize_list_element(ostream& out, t_list* tlist, string iter) {
   t_field efield(tlist->get_elem_type(), iter);
   generate_serialize_field(out, &efield, "");
 }

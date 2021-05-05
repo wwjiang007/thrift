@@ -18,6 +18,7 @@
 #
 
 if(ANDROID)
+
     set(THRIFT_AAR outputs/aar/thrift-debug.aar outputs/aar/thrift-release.aar)
     add_custom_command(
         OUTPUT ${THRIFT_AAR}
@@ -27,12 +28,13 @@ if(ANDROID)
     )
     add_custom_target(thrift_aar ALL DEPENDS ${THRIFT_AAR})
 
-else(ANDROID)
-
-    if(IS_ABSOLUTE "${LIB_INSTALL_DIR}")
-        set(JAVA_INSTALL_DIR "${LIB_INSTALL_DIR}/java")
-    else()
-        set(JAVA_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}/java")
+else()
+    if(NOT JAVA_INSTALL_DIR)
+        if(IS_ABSOLUTE "${LIB_INSTALL_DIR}")
+            set(JAVA_INSTALL_DIR "${LIB_INSTALL_DIR}/java")
+        else()
+            set(JAVA_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}/java")
+        endif()
     endif()
 
     if(IS_ABSOLUTE "${DOC_INSTALL_DIR}")
@@ -41,22 +43,33 @@ else(ANDROID)
         set(JAVA_DOC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${DOC_INSTALL_DIR}/java")
     endif()
 
-    add_custom_target(ThriftJava ALL
+    set(PRELEASE "true")
+    if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+        set(PRELEASE "false")
+    endif ()
+
+    file(GLOB_RECURSE THRIFTJAVA_SOURCES LIST_DIRECTORIES false
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/build/libs/libthrift.jar"
         COMMENT "Building Java library using Gradle Wrapper"
         COMMAND ${GRADLEW_EXECUTABLE} ${GRADLE_OPTS} assemble
             --console=plain --no-daemon
-            -Prelease=true
+            -Prelease=${PRELEASE}
             -Pthrift.version=${thrift_VERSION}
             "-Pbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build"
+        DEPENDS ${THRIFTJAVA_SOURCES}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
+    add_custom_target(ThriftJava ALL
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/build/libs/libthrift.jar")
 
     # Enable publishing from CMake if the publishing information is provided
     add_custom_target(MavenPublish
         COMMENT "Publishing Java Library to Apache Maven staging"
+        DEPENDS ThriftJava
         COMMAND ${GRADLEW_EXECUTABLE} ${GRADLE_OPTS} clean uploadArchives
             --console=plain --no-daemon
-            -Prelease=true
+            -Prelease=${PRELEASE}
             -Pthrift.version=${thrift_VERSION}
             "-Pbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -76,12 +89,13 @@ else(ANDROID)
 
     if(BUILD_TESTING)
         add_test(NAME JavaTest
-                COMMAND ${GRADLEW_EXECUTABLE} ${GRADLE_OPTS} test
-                    --console=plain --no-daemon
-                    -Prelease=true
-                    -Pthrift.version=${thrift_VERSION}
-                    "-Pbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build"
-                    "-Pthrift.compiler=${THRIFT_COMPILER}"
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+            COMMAND ${GRADLEW_EXECUTABLE} ${GRADLE_OPTS} test
+                --console=plain --no-daemon
+                -Prelease=${PRELEASE}
+                -Pthrift.version=${thrift_VERSION}
+                "-Pbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build"
+                "-Pthrift.compiler=${THRIFT_COMPILER}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
-endif(ANDROID)
+
+endif()

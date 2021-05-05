@@ -1,9 +1,18 @@
 #!/bin/sh
 set -ev
 
-# haxe hxcpp > 3.4.188 will enable c++11 by default, and break the
-#      build when compiling C files with clang++ by adding -std=c++11
-export HXCPP_NO_CPP11=1
+mkdir ~/.m2
+tee >~/.m2/settings.xml <<EOF
+<settings xmlns='http://maven.apache.org/SETTINGS/1.0.0'>
+  <mirrors>
+    <mirror>
+      <id>secure-central</id>
+      <url>https://repo.maven.apache.org/maven2</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
 
 ./bootstrap.sh
 ./configure $*

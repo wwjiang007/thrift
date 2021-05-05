@@ -102,20 +102,21 @@ public:
    * Init and close methods
    */
 
-  void init_generator();
-  void close_generator();
+  void init_generator() override;
+  void close_generator() override;
 
   /**
    * Program-level generation functions
    */
 
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
-  void generate_const(t_const* tconst);
-  void generate_struct(t_struct* tstruct);
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
+  void generate_const(t_const* tconst) override;
+  void generate_struct(t_struct* tstruct) override;
+  void generate_forward_declaration(t_struct* tstruct) override;
   void generate_union(t_struct* tunion);
-  void generate_xception(t_struct* txception);
-  void generate_service(t_service* tservice);
+  void generate_xception(t_struct* txception) override;
+  void generate_service(t_service* tservice) override;
 
   t_rb_ofstream& render_const_value(t_rb_ofstream& out, t_type* type, t_const_value* value);
 
@@ -123,6 +124,7 @@ public:
    * Struct generation code
    */
 
+  void generate_rb_struct_declaration(t_rb_ofstream& out, t_struct* tstruct, bool is_exception);
   void generate_rb_struct(t_rb_ofstream& out, t_struct* tstruct, bool is_exception);
   void generate_rb_struct_required_validator(t_rb_ofstream& out, t_struct* tstruct);
   void generate_rb_union(t_rb_ofstream& out, t_struct* tstruct, bool is_exception);
@@ -305,15 +307,15 @@ string t_rb_generator::render_require_thrift() {
 string t_rb_generator::render_includes() {
   const vector<t_program*>& includes = program_->get_includes();
   string result = "";
-  for (size_t i = 0; i < includes.size(); ++i) {
+  for (auto include : includes) {
     if (namespaced_) {
-      t_program* included = includes[i];
+      t_program* included = include;
       std::string included_require_prefix
           = rb_namespace_to_path_prefix(included->get_namespace("rb"));
       std::string included_name = included->get_name();
       result += "require '" + included_require_prefix + underscore(included_name) + "_types'\n";
     } else {
-      result += "require '" + underscore(includes[i]->get_name()) + "_types'\n";
+      result += "require '" + underscore(include->get_name()) + "_types'\n";
     }
   }
   if (includes.size() > 0) {
@@ -455,16 +457,16 @@ t_rb_ofstream& t_rb_generator::render_const_value(t_rb_ofstream& out,
     out.indent_up();
     const vector<t_field*>& fields = ((t_struct*)type)->get_members();
     vector<t_field*>::const_iterator f_iter;
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-      t_type* field_type = NULL;
+      t_type* field_type = nullptr;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
         if ((*f_iter)->get_name() == v_iter->first->get_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
-      if (field_type == NULL) {
+      if (field_type == nullptr) {
         throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
       }
       out.indent();
@@ -478,8 +480,8 @@ t_rb_ofstream& t_rb_generator::render_const_value(t_rb_ofstream& out,
     t_type* vtype = ((t_map*)type)->get_val_type();
     out << "{" << endl;
     out.indent_up();
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       out.indent();
       render_const_value(out, ktype, v_iter->first) << " => ";
@@ -527,6 +529,29 @@ void t_rb_generator::generate_struct(t_struct* tstruct) {
   } else {
     generate_rb_struct(f_types_, tstruct, false);
   }
+}
+
+
+/**
+ * Generates the "forward declarations" for ruby structs.
+ * These are simply a declaration of each class with proper inheritance.
+ * The rest of the struct is still generated in generate_struct as has
+ * always been the case. These declarations allow thrift to generate valid
+ * ruby in cases where thrift structs rely on recursive definitions.
+ */
+void t_rb_generator::generate_forward_declaration(t_struct* tstruct) {
+  generate_rb_struct_declaration(f_types_, tstruct, tstruct->is_xception());
+}
+
+void t_rb_generator::generate_rb_struct_declaration(t_rb_ofstream& out, t_struct* tstruct, bool is_exception) {
+  out.indent() << "class " << type_name(tstruct);
+  if (tstruct->is_union()) {
+    out << " < ::Thrift::Union";
+  }
+  if (is_exception) {
+    out << " < ::Thrift::Exception";
+  }
+  out << "; end" << endl << endl;
 }
 
 /**
@@ -688,7 +713,7 @@ void t_rb_generator::generate_field_defns(t_rb_ofstream& out, t_struct* tstruct)
 void t_rb_generator::generate_field_data(t_rb_ofstream& out,
                                          t_type* field_type,
                                          const std::string& field_name = "",
-                                         t_const_value* field_value = NULL,
+                                         t_const_value* field_value = nullptr,
                                          bool optional = false) {
   field_type = get_true_type(field_type);
 
@@ -699,7 +724,7 @@ void t_rb_generator::generate_field_data(t_rb_ofstream& out,
     out << ", :name => '" << field_name << "'";
   }
 
-  if (field_value != NULL) {
+  if (field_value != nullptr) {
     out << ", :default => ";
     render_const_value(out, field_type, field_value);
   }
@@ -738,8 +763,8 @@ void t_rb_generator::generate_field_data(t_rb_ofstream& out,
 }
 
 void t_rb_generator::begin_namespace(t_rb_ofstream& out, vector<std::string> modules) {
-  for (vector<std::string>::iterator m_iter = modules.begin(); m_iter != modules.end(); ++m_iter) {
-    out.indent() << "module " << *m_iter << endl;
+  for (auto & module : modules) {
+    out.indent() << "module " << module << endl;
     out.indent_up();
   }
 }
@@ -763,7 +788,7 @@ void t_rb_generator::generate_service(t_service* tservice) {
 
   f_service_ << rb_autogen_comment() << endl << render_require_thrift();
 
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     if (namespaced_) {
       f_service_ << "require '" << rb_namespace_to_path_prefix(
                                        tservice->get_extends()->get_program()->get_namespace("rb"))
@@ -843,7 +868,7 @@ void t_rb_generator::generate_rb_function_helpers(t_function* tfunction) {
 void t_rb_generator::generate_service_client(t_service* tservice) {
   string extends = "";
   string extends_client = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     extends = full_type_name(tservice->get_extends());
     extends_client = " < " + extends + "::Client ";
   }
@@ -967,7 +992,7 @@ void t_rb_generator::generate_service_server(t_service* tservice) {
 
   string extends = "";
   string extends_processor = "";
-  if (tservice->get_extends() != NULL) {
+  if (tservice->get_extends() != nullptr) {
     extends = full_type_name(tservice->get_extends());
     extends_processor = " < " + extends + "::Processor ";
   }
@@ -1115,8 +1140,8 @@ string t_rb_generator::type_name(const t_type* ttype) {
 string t_rb_generator::full_type_name(const t_type* ttype) {
   string prefix = "::";
   vector<std::string> modules = ruby_modules(ttype->get_program());
-  for (vector<std::string>::iterator m_iter = modules.begin(); m_iter != modules.end(); ++m_iter) {
-    prefix += *m_iter + "::";
+  for (auto & module : modules) {
+    prefix += module + "::";
   }
   return prefix + type_name(ttype);
 }

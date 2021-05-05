@@ -79,20 +79,20 @@ public:
     out_dir_base_ = "gen-xml";
   }
 
-  virtual ~t_xml_generator() {}
+  ~t_xml_generator() override = default;
 
-  void init_generator();
-  void close_generator();
-  void generate_program();
+  void init_generator() override;
+  void close_generator() override;
+  void generate_program() override;
 
   void iterate_program(t_program* program);
-  void generate_typedef(t_typedef* ttypedef);
-  void generate_enum(t_enum* tenum);
+  void generate_typedef(t_typedef* ttypedef) override;
+  void generate_enum(t_enum* tenum) override;
   void generate_function(t_function* tfunc);
   void generate_field(t_field* field);
 
-  void generate_service(t_service* tservice);
-  void generate_struct(t_struct* tstruct);
+  void generate_service(t_service* tservice) override;
+  void generate_struct(t_struct* tstruct) override;
 
   void generate_annotations(std::map<std::string, std::string> annotations);
 
@@ -101,7 +101,7 @@ private:
   bool should_use_default_ns_;
   bool should_use_namespaces_;
 
-  std::ofstream f_xml_;
+  ofstream_with_content_based_conditional_update f_xml_;
 
   std::set<string> programs_;
   std::stack<string> elements_;
@@ -245,8 +245,8 @@ void t_xml_generator::write_element_string(string name, string val) {
 
 string t_xml_generator::escape_xml_string(const string& input) {
   std::ostringstream ss;
-  for (std::string::const_iterator iter = input.begin(); iter != input.end(); iter++) {
-    switch (*iter) {
+  for (char iter : input) {
+    switch (iter) {
     case '&':
       ss << "&amp;";
       break;
@@ -263,7 +263,7 @@ string t_xml_generator::escape_xml_string(const string& input) {
       ss << "&gt;";
       break;
     default:
-      ss << *iter;
+      ss << iter;
       break;
     }
   }
@@ -483,8 +483,8 @@ void t_xml_generator::write_const_value(t_const_value* value) {
 
   case t_const_value::CV_MAP: {
     write_element_start("map");
-    std::map<t_const_value*, t_const_value*> map = value->get_map();
-    std::map<t_const_value*, t_const_value*>::iterator mit;
+    std::map<t_const_value*, t_const_value*, t_const_value::value_compare> map = value->get_map();
+    std::map<t_const_value*, t_const_value*, t_const_value::value_compare>::iterator mit;
     for (mit = map.begin(); mit != map.end(); ++mit) {
       write_element_start("entry");
       write_element_start("key");

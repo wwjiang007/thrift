@@ -87,7 +87,7 @@ sudo ./b2 install
 
 # Java LIB Dependencies
 #####################################
-sudo yum install -y ant junit ant-nodeps ant-junit java-1.7.0-openjdk-devel
+sudo yum install -y ant junit ant-nodeps ant-junit java-1.8.0-openjdk-devel
 
 # Python LIB Dependencies
 #####################################
@@ -129,14 +129,6 @@ sudo yum install -y golang golang-pkg-linux-amd64
 # C# LIB Dependencies
 #####################################
 sudo yum install -y mono-core mono-devel mono-web-devel mono-extras mingw32-binutils mingw32-runtime mingw32-nsis
-
-# Haskell LIB Dependencies
-#####################################
-wget http://sherkin.justhub.org/el6/RPMS/x86_64/justhub-release-2.0-4.0.el6.x86_64.rpm
-sudo rpm -ivh justhub-release-2.0-4.0.el6.x86_64.rpm
-sudo yum -y install haskell
-sudo cabal update
-sudo cabal install cabal-install
 
 # Build and Test Apache Thrift
 #####################################

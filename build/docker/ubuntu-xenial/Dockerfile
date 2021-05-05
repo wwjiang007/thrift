@@ -13,9 +13,12 @@
 #
 # Apache Thrift Docker build environment for Ubuntu Xenial
 # Using all stock Ubuntu Xenial packaging except for:
-# - d: does not come with Ubuntu so we're installing 2.073.2 for coverage
-# - dart: does not come with Ubuntu so we're installing 1.22.1 for coverage
-# - nodejs: Ubuntu comes with 4.2.6 which exits LTS April 2018, so we're installing 6.x
+# - d: does not come with Ubuntu so we're installing 2.087.0 for coverage
+# - dart: does not come with Ubuntu so we're installing 2.0.0-1 for coverage
+# - dotnet: does not come with Ubuntu
+# - go: Xenial comes with 1.6, but we need 1.10 or later
+# - nodejs: Xenial comes with 4.2.6 which exits LTS April 2018, so we're installing 10.x
+# - ocaml: causes stack overflow error, just started March 2018 not sure why
 #
 
 FROM buildpack-deps:xenial-scm
@@ -32,33 +35,25 @@ RUN apt-get update && \
       apt-utils \
       curl \
       software-properties-common \
-      wget
-
-# csharp (mono)
-# RUN echo "deb http://download.mono-project.com/repo/debian xenial main" | tee /etc/apt/sources.list.d/mono.list && \
-#     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A6A19B38D3D831EF
-
-# D
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EBCF975E5BA24D5E && \
-    wget http://master.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list && \
-    wget -qO - https://dlang.org/d-keyring.gpg | apt-key add -
-ENV D_VERSION 2.073.2-0
+      wget && \
 
 # Dart
-RUN curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     curl https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > \
-      /etc/apt/sources.list.d/dart_stable.list
-ENV DART_VERSION 1.22.1-1
+      /etc/apt/sources.list.d/dart_stable.list && \
 
 # dotnet (core)
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
+    curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg && \
     echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod xenial main" > \
-      /etc/apt/sources.list.d/dotnetdev.list
+      /etc/apt/sources.list.d/dotnetdev.list && \
 
 # node.js
-RUN curl -sL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
-    echo "deb https://deb.nodesource.com/node_6.x xenial main" | tee /etc/apt/sources.list.d/nodesource.list
-    
+    curl -sL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
+    echo "deb https://deb.nodesource.com/node_10.x xenial main" | tee /etc/apt/sources.list.d/nodesource.list && \
+
+# ruby 2.4
+    apt-add-repository ppa:brightbox/ruby-ng
+
 ### install general dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
 `# General dependencies` \
@@ -93,30 +88,24 @@ RUN apt-get install -y --no-install-recommends \
       qtbase5-dev \
       qtbase5-dev-tools
 
-RUN apt-get install -y --no-install-recommends \
-`# csharp (mono) dependencies` \
-      mono-devel
-
-RUN apt-get install -y --allow-unauthenticated --no-install-recommends \
+ENV D_VERSION     2.087.0
+ENV DMD_DEB       dmd_2.087.0-0_amd64.deb
+RUN \
 `# D dependencies` \
-      dmd-bin=$D_VERSION \
-      libphobos2-dev=$D_VERSION \
-      dub \
-      dfmt \
-      dscanner \
-      libevent-dev \
-      libssl-dev \
-      xdg-utils
-RUN mkdir -p /usr/include/dmd/druntime/import/deimos /usr/include/dmd/druntime/import/C && \
-    curl -sSL https://github.com/D-Programming-Deimos/libevent/archive/master.tar.gz| tar xz && \
-    mv libevent-master/deimos/* /usr/include/dmd/druntime/import/deimos/ && \
-    mv libevent-master/C/* /usr/include/dmd/druntime/import/C/ && \
-    rm -rf libevent-master
-RUN curl -sSL https://github.com/D-Programming-Deimos/openssl/archive/master.tar.gz| tar xz && \
-    mv openssl-master/deimos/* /usr/include/dmd/druntime/import/deimos/ && \
-    mv openssl-master/C/* /usr/include/dmd/druntime/import/C/ && \
-    rm -rf openssl-master
+    wget -q http://downloads.dlang.org/releases/2.x/${D_VERSION}/${DMD_DEB} && \
+    dpkg --install ${DMD_DEB} && \
+    rm -f ${DMD_DEB} && \
+    mkdir -p /usr/include/dmd/druntime/import/deimos /usr/include/dmd/druntime/import/C && \
+    git clone -b 'v2.0.2+2.0.16' https://github.com/D-Programming-Deimos/libevent.git deimos-libevent-2.0 && \
+    mv deimos-libevent-2.0/deimos/* /usr/include/dmd/druntime/import/deimos/ && \
+    mv deimos-libevent-2.0/C/* /usr/include/dmd/druntime/import/C/ && \
+    rm -rf deimos-libevent-2.0 && \
+    git clone -b 'v1.1.6+1.0.1g' https://github.com/D-Programming-Deimos/openssl.git deimos-openssl-1.0.1g && \
+    mv deimos-openssl-1.0.1g/deimos/* /usr/include/dmd/druntime/import/deimos/ && \
+    mv deimos-openssl-1.0.1g/C/* /usr/include/dmd/druntime/import/C/ && \
+    rm -rf deimos-openssl-1.0.1g
 
+ENV DART_VERSION 2.7.2-1
 RUN apt-get install -y --no-install-recommends \
 `# Dart dependencies` \
       dart=$DART_VERSION
@@ -124,7 +113,7 @@ ENV PATH /usr/lib/dart/bin:$PATH
 
 RUN apt-get install -y --no-install-recommends \
 `# dotnet core dependencies` \
-      dotnet-sdk-2.1.4
+      dotnet-sdk-5.0
 
 RUN apt-get install -y --no-install-recommends \
 `# Erlang dependencies` \
@@ -138,15 +127,15 @@ RUN apt-get install -y --no-install-recommends \
 `# GlibC dependencies` \
       libglib2.0-dev
 
-RUN apt-get install -y --no-install-recommends \
-`# golang (go) dependencies` \
-      golang-go \
-      golang-race-detector-runtime
-
-RUN apt-get install -y --no-install-recommends \
-`# Haskell dependencies` \
-      ghc \
-      cabal-install
+# golang
+ENV GOLANG_VERSION 1.15.10
+ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
+ENV GOLANG_DOWNLOAD_SHA256 4aa1267517df32f2bf1cc3d55dfc27d0c6b2c2b0989449c96dd19273ccca051d
+RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz && \
+      echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - && \
+      tar -C /usr/local -xzf golang.tar.gz && \
+      ln -s /usr/local/go/bin/go /usr/local/bin && \
+      rm golang.tar.gz
 
 RUN apt-get install -y --no-install-recommends \
 `# Haxe dependencies` \
@@ -165,10 +154,11 @@ RUN apt-get install -y --no-install-recommends \
       openjdk-8-jdk \
       maven
 
-RUN apt-get install -y --no-install-recommends \
-`# Lua dependencies` \
-      lua5.2 \
-      lua5.2-dev
+# disabled: same as ubuntu-bionic jobs
+# RUN apt-get install -y --no-install-recommends \
+# `# Lua dependencies` \
+#       lua5.2 \
+#       lua5.2-dev
 # https://bugs.launchpad.net/ubuntu/+source/lua5.3/+bug/1707212
 # lua5.3 does not install alternatives so stick with 5.2 here
 
@@ -176,12 +166,21 @@ RUN apt-get install -y --no-install-recommends \
 `# Node.js dependencies` \
       nodejs
 
+# Test dependencies for running puppeteer
 RUN apt-get install -y --no-install-recommends \
-`# OCaml dependencies` \
-      ocaml \
-      opam && \
-    opam init --yes && \
-    opam install --yes oasis
+`# JS dependencies` \
+      libxss1 \
+      libxtst6 \
+      libatk-bridge2.0-0 \
+      libgtk-3-0
+
+# THRIFT-4517: causes stack overflows; version too old; skip ocaml in xenial
+# RUN apt-get install -y --no-install-recommends \
+# `# OCaml dependencies` \
+#       ocaml \
+#       opam && \
+#     opam init --yes && \
+#     opam install --yes oasis
 
 RUN apt-get install -y --no-install-recommends \
 `# Perl dependencies` \
@@ -189,13 +188,15 @@ RUN apt-get install -y --no-install-recommends \
       libclass-accessor-class-perl \
       libcrypt-ssleay-perl \
       libio-socket-ssl-perl \
-      libnet-ssleay-perl
+      libnet-ssleay-perl \
+      libtest-exception-perl
 
 RUN apt-get install -y --no-install-recommends \
 `# Php dependencies` \
       php7.0 \
       php7.0-cli \
       php7.0-dev \
+      php-json \
       php-pear \
       re2c \
       composer
@@ -227,15 +228,12 @@ RUN apt-get install -y --no-install-recommends \
 
 RUN apt-get install -y --no-install-recommends \
 `# Ruby dependencies` \
-      ruby \
-      ruby-dev \
+      ruby2.4 \
+      ruby2.4-dev \
       ruby-bundler
-RUN gem install bundler --no-ri --no-rdoc
 
-RUN apt-get install -y --no-install-recommends \
-`# Rust dependencies` \
-      cargo \
-      rustc
+# Rust dependencies
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain 1.40.0 -y
 
 # Clean up
 RUN rm -rf /var/cache/apt/* && \

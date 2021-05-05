@@ -21,18 +21,11 @@ SUBDIRS = json xml
 PRECROSS_TARGET =
 
 if WITH_CPP
-# cpp dir is picked directly by plugin build
-if !WITH_PLUGIN
 SUBDIRS += cpp
-endif
 endif
 
 if WITH_C_GLIB
 SUBDIRS += c_glib
-endif
-
-if WITH_MONO
-SUBDIRS += csharp
 endif
 
 if WITH_JAVA
@@ -55,10 +48,6 @@ if WITH_RUBY
 SUBDIRS += rb
 endif
 
-if WITH_HASKELL
-SUBDIRS += hs
-endif
-
 if WITH_PERL
 SUBDIRS += perl
 endif
@@ -71,8 +60,8 @@ if WITH_DART
 SUBDIRS += dart
 endif
 
-if WITH_DOTNETCORE
-SUBDIRS += netcore
+if WITH_DOTNET
+SUBDIRS += netstd
 endif
 
 if WITH_GO
@@ -87,6 +76,7 @@ endif
 if WITH_NODEJS
 SUBDIRS += nodejs
 PRECROSS_TARGET += precross-nodejs
+SUBDIRS += nodets
 endif
 
 if WITH_LUA
@@ -101,11 +91,13 @@ if WITH_CL
 SUBDIRS += cl
 endif
 
+if WITH_SWIFT
+SUBDIRS += swift
+endif
+
 # All of the libs that don't use Automake need to go in here
 # so they will end up in our release tarballs.
 EXTRA_DIST = \
-	as3 \
-	cocoa \
 	d \
 	dart \
 	delphi \

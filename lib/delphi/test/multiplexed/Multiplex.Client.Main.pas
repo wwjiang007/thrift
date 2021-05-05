@@ -35,8 +35,9 @@ uses
   Thrift.Transport,
   Thrift.Stream,
   Thrift.Collections,
-  Benchmark,  // in gen-delphi folder
-  Aggr,       // in gen-delphi folder
+  Thrift.Configuration,
+  Benchmark,
+  Aggr,
   Multiplex.Test.Common;
 
 type
@@ -93,8 +94,10 @@ end;
 
 procedure TTestClient.Setup;
 var trans : ITransport;
+    config : IThriftConfiguration;
 begin
-  trans := TSocketImpl.Create( 'localhost', 9090);
+  config := TThriftConfigurationImpl.Create;
+  trans := TSocketImpl.Create( 'localhost', 9090, DEFAULT_THRIFT_TIMEOUT, config);
   trans := TFramedTransportImpl.Create( trans);
   trans.Open;
   FProtocol := TBinaryProtocolImpl.Create( trans, TRUE, TRUE);

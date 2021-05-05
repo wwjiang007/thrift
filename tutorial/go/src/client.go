@@ -20,12 +20,15 @@ package main
  */
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
-	"tutorial"
 
-	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/apache/thrift/tutorial/go/gen-go/tutorial"
 )
+
+var defaultCtx = context.Background()
 
 func handleClient(client *tutorial.CalculatorClient) (err error) {
 	client.Ping(defaultCtx)
@@ -46,7 +49,6 @@ func handleClient(client *tutorial.CalculatorClient) (err error) {
 		default:
 			fmt.Println("Error during operation:", err)
 		}
-		return err
 	} else {
 		fmt.Println("Whoa we can divide by 0 with new value:", quotient)
 	}

@@ -19,7 +19,8 @@ library thrift.test.transport.t_socket_transport_test;
 
 import 'dart:async';
 import 'dart:convert' show Encoding;
-import 'dart:convert' show Utf8Codec, BASE64;
+import 'dart:convert' show Utf8Codec;
+import 'dart:convert' show base64;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:http/http.dart' show BaseRequest;
@@ -30,16 +31,16 @@ import 'package:test/test.dart';
 import 'package:thrift/thrift.dart';
 
 void main() {
-  const utf8Codec = const Utf8Codec();
+  const utf8Codec = Utf8Codec();
 
   group('THttpClientTransport', () {
     FakeHttpClient client;
     THttpClientTransport transport;
 
     setUp(() {
-      client = new FakeHttpClient(sync: false);
-      var config = new THttpConfig(Uri.parse('http://localhost'), {});
-      transport = new THttpClientTransport(client, config);
+      client = FakeHttpClient(sync: false);
+      var config = THttpConfig(Uri.parse('http://localhost'), {});
+      transport = THttpClientTransport(client, config);
     });
 
     test('Test transport sends body', () async {
@@ -52,15 +53,14 @@ void main() {
 
       expect(client.postRequest, isNotEmpty);
 
-      var requestText =
-          utf8Codec.decode(BASE64.decode(client.postRequest));
+      var requestText = utf8Codec.decode(base64.decode(client.postRequest));
       expect(requestText, expectedText);
     });
 
     test('Test transport receives response', () async {
       var expectedText = 'my response';
       var expectedBytes = utf8Codec.encode(expectedText);
-      client.postResponse = BASE64.encode(expectedBytes);
+      client.postResponse = base64.encode(expectedBytes);
 
       transport.writeAll(utf8Codec.encode('my request'));
       expect(transport.hasReadData, isFalse);
@@ -69,7 +69,7 @@ void main() {
 
       expect(transport.hasReadData, isTrue);
 
-      var buffer = new Uint8List(expectedBytes.length);
+      var buffer = Uint8List(expectedBytes.length);
       transport.readAll(buffer, 0, expectedBytes.length);
 
       var bufferText = utf8Codec.decode(buffer);
@@ -82,9 +82,9 @@ void main() {
     THttpClientTransport transport;
 
     setUp(() {
-      client = new FakeHttpClient(sync: true);
-      var config = new THttpConfig(Uri.parse('http://localhost'), {});
-      transport = new THttpClientTransport(client, config);
+      client = FakeHttpClient(sync: true);
+      var config = THttpConfig(Uri.parse('http://localhost'), {});
+      transport = THttpClientTransport(client, config);
     });
 
     test('Test read correct buffer after flush', () async {
@@ -94,10 +94,10 @@ void main() {
 
       // prepare a response
       transport.writeAll(utf8Codec.encode('request 1'));
-      client.postResponse = BASE64.encode(expectedBytes);
+      client.postResponse = base64.encode(expectedBytes);
 
       Future responseReady = transport.flush().then((_) {
-        var buffer = new Uint8List(expectedBytes.length);
+        var buffer = Uint8List(expectedBytes.length);
         transport.readAll(buffer, 0, expectedBytes.length);
         bufferText = utf8Codec.decode(buffer);
       });
@@ -105,7 +105,7 @@ void main() {
       // prepare a second response
       transport.writeAll(utf8Codec.encode('request 2'));
       var response2Bytes = utf8Codec.encode('response 2');
-      client.postResponse = BASE64.encode(response2Bytes);
+      client.postResponse = base64.encode(response2Bytes);
       await transport.flush();
 
       await responseReady;
@@ -120,45 +120,55 @@ class FakeHttpClient implements Client {
 
   final bool sync;
 
-  FakeHttpClient({this.sync: false});
+  FakeHttpClient({this.sync = false});
 
+  @override
   Future<Response> post(url,
       {Map<String, String> headers, body, Encoding encoding}) {
     postRequest = body;
-    var response = new Response(postResponse, 200);
+    var response = Response(postResponse, 200);
 
     if (sync) {
-      return new Future.sync(() => response);
+      return Future.sync(() => response);
     } else {
-      return new Future.value(response);
+      return Future.value(response);
     }
   }
 
+  @override
   Future<Response> head(url, {Map<String, String> headers}) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
+  @override
   Future<Response> get(url, {Map<String, String> headers}) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
+  @override
   Future<Response> put(url,
           {Map<String, String> headers, body, Encoding encoding}) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
+  @override
   Future<Response> patch(url,
           {Map<String, String> headers, body, Encoding encoding}) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
+  @override
   Future<Response> delete(url, {Map<String, String> headers}) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
+  @override
   Future<String> read(url, {Map<String, String> headers}) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
+  @override
   Future<Uint8List> readBytes(url, {Map<String, String> headers}) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
+  @override
   Future<StreamedResponse> send(BaseRequest request) =>
-      throw new UnimplementedError();
+      throw UnimplementedError();
 
-  void close() => throw new UnimplementedError();
+  @override
+  void close() => throw UnimplementedError();
 }

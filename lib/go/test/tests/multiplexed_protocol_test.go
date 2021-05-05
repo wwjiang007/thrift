@@ -20,11 +20,13 @@
 package tests
 
 import (
-	"multiplexedprotocoltest"
+	"context"
 	"net"
 	"testing"
-	"thrift"
 	"time"
+
+	"github.com/apache/thrift/lib/go/test/gopath/src/multiplexedprotocoltest"
+	"github.com/apache/thrift/lib/go/thrift"
 )
 
 func FindAvailableTCPServerPort() net.Addr {
@@ -36,8 +38,20 @@ func FindAvailableTCPServerPort() net.Addr {
 	}
 }
 
+type FirstImpl struct{}
+
+func (f *FirstImpl) ReturnOne(ctx context.Context) (r int64, err error) {
+	return 1, nil
+}
+
+type SecondImpl struct{}
+
+func (s *SecondImpl) ReturnTwo(ctx context.Context) (r int64, err error) {
+	return 2, nil
+}
+
 func createTransport(addr net.Addr) (thrift.TTransport, error) {
-	socket := thrift.NewTSocketFromAddrTimeout(addr, TIMEOUT)
+	socket := thrift.NewTSocketFromAddrTimeout(addr, TIMEOUT, TIMEOUT)
 	transport := thrift.NewTFramedTransport(socket)
 	err := transport.Open()
 	if err != nil {

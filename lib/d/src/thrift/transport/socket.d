@@ -28,6 +28,13 @@ import thrift.base;
 import thrift.transport.base;
 import thrift.internal.socket;
 
+version (Windows) {
+  import core.sys.windows.winsock2 : WSAECONNRESET;
+  enum ECONNRESET = WSAECONNRESET;
+} else version (Posix) {
+  import core.stdc.errno : ECONNRESET;
+} else static assert(0, "Don't know ECONNRESET on this platform.");
+
 /**
  * Common parts of a socket TTransport implementation, regardless of how the
  * actual I/O is performed (sync/async).
@@ -256,7 +263,7 @@ class TSocket : TSocketBase {
         new TCompoundOperationException(
           text(
             "All addresses tried failed (",
-            joiner(map!q{text(a._0, `: "`, a._1.msg, `"`)}(zip(addrs, errors)), ", "),
+            joiner(map!q{text(a[0], `: "`, a[1].msg, `"`)}(zip(addrs, errors)), ", "),
             ")."
           ),
           errors
